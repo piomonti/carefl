@@ -110,22 +110,6 @@ def RunSimulations( nSims=25, nPoints=100, causal_mechanism='linear',
 
     return results
 
-if False:
-    nvals = [ 25, 50, 75, 100,  150, 250, 500 ]
-    results = []
-    causal_mechanism = 'nueralnet_l1' # 'linear' #   'hoyer2009' #  'linear' #   'nueralnet_l1' # 
-    nsims = 250 
-    algos =  ['FlowCD', 'LRHyv', 'notears', 'RECI', 'ANM' ] # ['notears'] # ['RECI', 'notears'] #
-    print('Mechanism: {}'.format(causal_mechanism))
-    for n in nvals:
-        print('### {} ###'.format(n))
-        results.append( RunSimulations( nSims=nsims,  nPoints=n, causal_mechanism=causal_mechanism, algolist=algos ) )
-
-
-    import pickle
-    pickle.dump( results, open( 'results/' + causal_mechanism + "_results.p", 'wb') )
-
-
 
 
 
