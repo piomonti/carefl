@@ -1,0 +1,641 @@
+\documentclass[]{article}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs} % for professional tables
+\usepackage{geometry}
+\usepackage{natbib}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage[shortlabels]{enumitem}
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs} % for professional tables
+
+\RequirePackage{algorithm}
+\RequirePackage{algorithmic}
+
+
+%opening
+\title{Autoregressive flow-based causal inference}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We posit that autoregressive flow models are well-suited to 
+performing a range of causal inference tasks --- ranging from causal discovery to making
+interventional and 
+counterfactual predictions. 
+%We demonstrate how the key strengths of flow models, namely the fact
+%the estimate normalized log-densities and their invertible nature
+%In particular, 
+%Our approach is based on the (somewhat obvious) fact that 
+%We highlight the fact that 
+In particular, we exploit the fact that 
+autoregressive architectures %implicitly 
+define an 
+ordering over 
+variables,
+analogous to a causal ordering, in order to 
+propose a single flow architecture to perform all three aforementioned tasks.  
+%which can be seen as analogous to the causal ordering defined 
+%in
+%structural equation  models. % (SEM). 
+%
+We first leverage the fact that flow models estimate normalized 
+log-densities of data %conditional on an ordering of variables 
+%to infer 
+to derive a bivariate measure of causal direction based on likelihood ratios. 
+Whilst traditional measures of causal direction often require restrictive assumptions on the nature of 
+causal relationships (e.g., linearity),
+the flexibility of flow models allows for arbitrary causal dependencies.
+%
+%for such a measure to accurately identify
+%causal variables in a variety  
+%the associated causal ordering. 
+%The proposed method is benchmarked against alternative methods on both
+%synthetic and 
+%
+Our approach compares favorably against standard 
+benchmark methods on both synthetic data and 
+real data.
+%
+%
+Subsequently, we demonstrate that the invertible nature of flows naturally allows for 
+direct evaluation of both 
+%everage the invertible nature of flow models in order to make accurate 
+interverntional and counterfactual predictions, which require 
+marginalization and conditioning over latent variables respectively. 
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Causal models play a fundamental role in modern scientific endeavor \citep{Spirtes2000, Pearl2009}. \\
+
+\noindent Mention the three levels on the ladder of causation and that we present a single 
+autoregressive flow architecture which is capable of performing all three. \\
+
+\noindent Write some more generic things about causal inference and causal discovery.\\
+
+\noindent Also highlight the main strengths of flow models:
+\begin{itemize}
+	\item They estimate normalized log-densities of data via maximum likelihood. This property is what we will leverage for our non-linear measure of causal direction. 
+	\item They learn invertible transformations of observations, $\mathbf{x}$, to latent variables, $\mathbf{z}$. This property will be fundamental when obtaining interventional and counterfactual predictions. 
+	\item Furthermore, autoregressive flow models 
+\end{itemize}
+
+The remainder of this note is structured as follows: in Section 
+\ref{sec::background} we briefly cover structural equation models (SEMs) and highlight the correspondence between such a model and autoregressive flow models. In Section \ref{sec::flowCD}
+we present the proposed flow based measure of causal direction. 
+Finally, in Section \ref{sec::flowCI} we demonstrate the 
+the same autoregressive flow architecture, when combined with a known causal ordering 
+over variables, may be used to obtain accurate interventional and counter-factual predictions. 
+
+\section{Background}
+\label{sec::background}
+
+In this section we 
+introduce the class of causal models to be studied and 
+highlight their correspondence with autoregressive flow models. 
+
+
+\subsection{Structural equation models}
+\label{sec::SEM}
+
+Suppose we observe $d$-dimensional random variables $\textbf{x}= (x_1, \ldots, x_d)$ 
+with joint distribution $\mathbb{P}(\textbf{x})$.  %$\mathcal{L}(\textbf{X})$. 
+%The objective of causal discovery is to use the observed data, 
+%which give the empirical version of $\mathbb{P}(\textbf{X})$, to infer the associated 
+%causal graph
+%which describes the data generating procedure \citep{Spirtes2000, Pearl2009}.
+%
+A structural equation model (SEM) is here defined (generalizing the traditional definition) as a 
+% pair 
+% $(\mathcal{S}, \mathbb{P}(\textbf{N}))$, 
+% where $\mathcal{S} = (\mathcal{S}_1, \ldots, \mathcal{S}_d)$ is a 
+collection of $d$ 
+structural equations:
+\begin{equation}
+\label{SEM_eq}
+% \mathcal{S}_j : ~~
+x_j = f_j ( \textbf{PA}_j, n_j), ~~ ~ j=1, \ldots ,d
+\end{equation}
+together with a joint distribution, $\mathbb{P}(\textbf{n})$, %is the joint distribution 
+over latent disturbance (noise)
+variables, $n_j$,  which are assumed to be mutually  independent. 
+We write $\textbf{PA}_j$ to denote the parents of the variable $X_j$. 
+The causal graph, $\mathcal{G}$, associated with 
+%  a set of
+a SEM in equation (\ref{SEM_eq})
+is a graph
+consisting of one node corresponding to each variable $X_j$;
+%with arrows drawn from each parent to its direct descendants. 
+% is obtained by drawing arrows from each parent to its direct effect. 
+throughout this work we assume $\mathcal{G}$ 
+is a directed acyclic graph (DAG). %acyclic (i.e., a DAG). 
+%
+In the above definition of SEMs we allow 
+$f_j$ in equation (\ref{SEM_eq}) are allowed to be any
+(possibly non-linear) functions.
+%the causal discovery community has focused on 
+%specific special cases in order to obtain identifiability results as 
+%well as provide practical algorithms. 
+%Pertinent examples include:
+%\textit{a)} 
+%the linear non-Gaussian acyclic model  (LiNGAM; \citeauthor{Shimizu2006}, 2006),
+%%LiNGAM, 
+%which assumes each $f_j$ is a linear function and the $N_j$ are non-Gaussian,
+%\textit{b)} the additive noise model (ANM; \citeauthor{Hoyer2009}, 2009), which assumes the noise is additive,
+%%\begin{equation*}
+%%%\mathcal{S}_j : ~~
+%% X_j = f_j ( \textbf{PA}_j) + N_j, ~~ ~ j=1, \ldots ,d,
+%%\end{equation*}
+%and \textit{c)} the post-nonlinear causal model, which also captures possible non-linear distortion in the observed variables \citep{Zhangb}. 
+%%The objective of causal discovery methods is to employ data, $\textbf{X}$,
+%%to infer the edge structure of $\mathcal{G}$.
+
+
+
+\subsection{Autoregressive flow models}
+
+We briefly introduce autoregressive flow models, for further details we refer readers to  
+\cite{papamakarios2019normalizing} and \cite{kobyzev2019normalizing}. 
+
+
+Normalizing flows seek to express the log-density of observations 
+$\textbf{x}$ as an invertible and differentiable 
+transformation $T$ of latent variables, $\mathbf{z}$,
+which follow a base distribution,  $p_{{z}}(\mathbf{z})$. Typically the base distribution is 
+assumed to be factorial. 
+The generative model implied under such a framework is:
+\begin{align}
+\mathbf{z} &\sim p_z (\mathbf{z}) \\
+\mathbf{x} &= T( \mathbf{z})
+\end{align}
+This allows for the density of $\mathbf{x}$ to be obtained via a change of variables as follows:
+\begin{equation}
+p_x(\mathbf{x}) = p_{{z}}(\mathbf{z}) | \det J_T(\mathbf{z} )|^{-1}   .
+\label{flow_inverse}
+\end{equation} 
+Throughout this work,  $T$ or $T^{-1}$ will be implemented with neural networks. As such,  an important consideration 
+is ensuring the determinant of $T$ can be efficiently calculated. 
+\textit{Autoregressive} flow models are designed precisely to achieve this goal by restricting the 
+Jacobian of the transformation to be lower triangular \citep{huang2018neural}. 
+%In the general case, autoregressive flows can be implemented as:
+While autoregressive flows can be implemented in a variety of ways, we consider 
+affine transformations of the form:
+\begin{equation}
+z_j = s_j( \mathbf{x}_{1:j-1} ) + e^{t_j( \mathbf{x}_{1:j-1}  )} \cdot x_j
+\end{equation}
+where both $s_j(\cdot)$ and $t_j(\cdot)$ are parameterized by neural networks \citep{dinh2016density}. 
+We write $s_j$, $t_j$ to denote that such neural networks are distinct for each
+$j = 1, \ldots, d$. 
+Such a transformation can also be trivially inverted as:
+\begin{align}
+x_j &= \left (z_j - s( \mathbf{x}_{1:j-1} ) \right ) \cdot  e^{-t( \mathbf{x}_{1:j-1}  )} \\
+&= - s( \mathbf{x}_{1:j-1} ) \cdot  e^{-t( \mathbf{x}_{1:j-1}  )} +  z_j \cdot  e^{-t( \mathbf{x}_{1:j-1}  )} .
+\label{flow_inverse_2}
+\end{align}
+%In particular, throughout this work we consider 
+It is important to note that whilst the transformation detailed in 
+equation (\ref{flow_inverse}) is an affine transformation, and therefore of limited expressivity, 
+%it is possible to \textit{compose} multiple 
+flows are \textit{composable}, implying that we may take the composition of multiple affine flows
+$T_1, T_2, \ldots T_k$  to obtain $T = T_1 \circ T_2 \circ \cdots \circ T_k $ which will continue to be 
+invertible and have a tractable Jacobian \citep{papamakarios2019normalizing}.
+
+Moreover, 
+from equations (\ref{SEM_eq}) and (\ref{flow_inverse_2}) we note the correspondence between 
+autoregressive flow models and SEMs where each latent variable, $z_j$, can be 
+seen as a latent disturbance, $n_j$.  
+For the remainder of this document we will use $z_j$ and $n_j$ interchangeably. 
+
+%Such a relationships shares some similarities to 
+In the past, similar relationships between SEMs and linear and nonlinear ICA 
+models have been exploited to develop causal discovery 
+methods \citep{Shimizu2006, monti2019causal}. One important distinction between 
+the proposed method and previous ICA based methods, is that the latent representations of 
+autoregressive flow models are non-identifiable. 
+
+%We note that similar relationships between 
+%SEMs and 
+
+
+%A popular class of architectures are
+
+
+
+
+
+
+
+
+
+%\newpage 
+\section{Flow-based measures of causal direction}
+\label{sec::flowCD}
+
+In this section we exploit the correspondence between nonlinear SEMs 
+and 
+autoregressive flow models highlighted in 
+Section \ref{sec::background} in order to derive new measures of causal direction. 
+For simplicity, we restrict ourselves to the case of $d=2$ dimensional data in this section; higher 
+dimensional examples are considered in Section \ref{sec::flowCI}. 
+%
+The objective of the 
+proposed method is thus to uncover the causal direction between two univariate variables 
+${X}_1$ and ${X}_2$. 
+Suppose that ${X}_1 \rightarrow {X}_2$, such that 
+the associated SEM is of the form:
+\begin{equation}
+%\label{bivariate_eq1}
+{x}_1 = f_1( n_1 ) ~~~ \mbox{ and } ~~~ {x}_2 = f_2({x}_1, n_2),
+\label{bivariate_eq2}
+\end{equation}
+where $N_1, N_2$ are %non-Gaussian 
+latent disturbances with factorial joint distributions. 
+
+We follow \cite{Hyvarinen2013} 
+and pose causal discovery as a model selection problem. To this end, we seek to compare
+two candidate models: $x_1 \rightarrow x_2$ against $x_1 \leftarrow x_2$. 
+Likelihood ratios are an attractive way to deciding between alternative models 
+and have been proven to be uniformly most powerful when comparing simple hypothesis \citep{neyman1933ix}.
+%An attractive way to decide between alternative models is to via the likelihood ratio \citep{}. 
+%and derive likelihood ratio based measures of causal direction. 
+To this end, \cite{Hyvarinen2013} focus on the case of linear SEMs with non-Gaussian latent disturbances and present a variety of methods for estimating the likelihood under each candidate model. 
+In this section, we leverage the expressivity of autoregressive flow architectures in order to 
+derive a measure of causal direction for nonlinear SEMs. 
+
+The log-likelihood of the nonlinear SEM, $x_1 \rightarrow x_2$, can be computed as:
+\begin{align}
+\log L_{1\rightarrow 2 } ( \mathbf{x} ) &= \log p_{x_1}(x_1) + \log p_{x_2|x_1}( x_2 | x_1) \\
+&= \log p_{z_1} ( f_1^{-1} (x_1)) + \log p_{z_2} (f_2^{-1}( x_1, x_2)) + \log | \det \mathbf{J} \mathbf{f}^{-1}|, 
+\label{eq:flowApprox}
+\end{align}
+where equation (\ref{eq:flowApprox}) details now the log-likelihood is computed under an autoregressive flow model. 
+
+As such, one candidate approach is to fit two distinct
+autoregressive flow models, each with a distinct ordering over variables. 
+For each candidate model we train parameters for each flow via maximum likelihood. 
+However, in order to avoid overfitting we look to evaluate log-likelihood for each model over a 
+held out testing dataset. As such, the proposed measure of causal direction is 
+defined as:
+\begin{equation}
+\log R = {L_{1\rightarrow 2 }(\mathbf{x}_{test}; \mathbf{x}_{train}, \theta) } - { L_{2\rightarrow 1 }(\mathbf{x}_{test}; \mathbf{x}_{train}, \theta') }
+\label{eq:flowLR}
+\end{equation}
+where $L_{1\rightarrow 2 }(\mathbf{x}_{test}; \mathbf{x}_{train}) $ is the estimated log-likelihood 
+%under the constraint that $X_1$ is the 
+%causal variable and  $X_2$ the effect, 
+evaluated on an unseen test dataset $\mathbf{x}_{test}$. % \rightarrow X_2$.
+We denote by $\theta$ and $\theta'$ the parameters 
+for each flow model respectively. 
+%We evaluate this likelihood using an autoregressive flow network trained via maximum likelihood on training 
+%samples $ \mathbf{x}_{train}= \{ \mathbf{x}_1, \ldots, \mathbf{x}_n\}$. 
+
+
+\newpage 
+%Whilst \cite{Hyvarinen2013} focused exclusively on the 
+%case of linear SEMs with non-Gaussian latent disturbances, our proposed
+%measure of causal direction leverages the expressivity of 
+%autoregressive flow architectures to accommodate 
+%arbitrary nonlinear SEMs.  
+%In order to eva
+
+
+
+%pose the issue of inferring causal direction as a model selection problem.
+
+%Our proposed measure of causal direction is based on the generalized likelihood ratio statistic:
+%\begin{equation}
+%R = \frac{L_{1\rightarrow 2 }(\mathbf{x}_{test}; \mathbf{x}_{train}, \theta) }{ L_{2\rightarrow 1 }(\mathbf{x}_{test}; \mathbf{x}_{train}, \theta') }
+%\label{eq:flowLR}
+%\end{equation}
+%where $L_{1\rightarrow 2 }(\mathbf{x}_{test}; \mathbf{x}_{train}) $ is the estimated likelihood under the constraint that $X_1$ is the 
+%causal variable and  $X_2$ the effect, 
+%evaluated on an unseen test dataset $\mathbf{x}_{test}$. % \rightarrow X_2$.
+%We evaluate this likelihood using an autoregressive flow network trained via maximum likelihood on training 
+%samples $ \mathbf{x}_{train}= \{ \mathbf{x}_1, \ldots, \mathbf{x}_n\}$. 
+%%Due to the flexibility of flow models, when evaluating 
+%Equation (\ref{eq:flowLR}) can be seen as an extension of the linear measure of causal direction proposed in \cite{Hyvarinen2013} to accommodate nonlinear SEMs. 
+%A further important difference is that 
+%in order to account for the additional flexibility of flow models, we evaluate the likelihood over 
+%unseen test data. 
+
+
+\subsection{Experimental results}
+
+In order to demonstrate the capabilities of the proposed method we consider its performance over a variety of synthetic 
+datasets as well as on the cause-effect pairs benchmark dataset. 
+We compare the performance of the proposed method against several state-of-the-art methods. 
+As a comparison against a linear methods we include the 
+linear likelihood ratio method of \cite{Hyvarinen2013} as well as the recently
+proposed NO-TEARs method of \cite{zheng2018dags}.
+We further compare against the additive noise model (ANM) method 
+proposed by \cite{Hoyer2009} and \cite{Peters2013}. Here we employ Gaussian process 
+regression together with HSIC as a measure of statistical dependence. Finally, we also
+compare against the Regression Error Causal Inference (RECI) method of 
+\cite{Blobaum2018}.
+In the case of the proposed method, we 
+employ a two layer autoregressive architecture throughout all synthetic experiments
+with a base distribution of isotropic Laplace random variables. 
+
+
+
+%We benchmark the proposed method against multiple state of the art methods for linear and 
+%nonlinear SEMs. These are:
+%\begin{enumerate}
+%	\item The likelihood ratio for linear non-Gaussian causal models presented by 
+%	\cite{Hyvarinen2013}. 
+%	\item The additive noise model (ANM) proposed by \cite{Hoyer2009}. 
+%	\item The regression error cause inference (RECI) method of \cite{Blobaum2018}. This method is related to the measure of causal direction for nonlinear models 
+%	presented in Section 5.2 of \cite{Hyvarinen2013}. 
+%	\item The NO-TEARS method proposed by \cite{zheng2018dags}. 
+%\end{enumerate}
+%%Of the aforementioned methods, both ANM and RECI have been explicitly developed for 
+%%nonlinear SEMs whilst the
+%In the case of ANM and RECI we employ a Gaussian Process regression.
+
+
+
+\subsubsection*{Results on synthetic data}%{Simulation of artificial data}
+%In order to evaluate the performance of the proposed measure of causal direction, we consider
+%a series of synthetic experiments where the underlying 
+%causal model is known. 
+%In particular, 
+Data is  generated according to the following 
+SEM:
+\begin{equation}
+x_1 = n_1 ~~~ \mbox{ and } ~~~ x_2 = f( x_1, n_2),\label{eq:SEMgen}
+\end{equation}
+where $n_1, n_2$ follow a standard Laplace distribution. 
+%where w
+We consider three distinct forms for $f$:
+\begin{equation}
+f(x_1, n_2) = \begin{cases}
+\alpha x_1 + n_2       & \quad \text{LiNGAM, } \\
+x_1 + \alpha x_1^3 + n_2  & \quad \text{nonlinear ANM, }\\
+\sigma \left (  \sigma \left ( \alpha X_1 \right ) + N_2 \right ) &\quad \text{two layer neural net.}
+\end{cases}
+\end{equation}
+For each distinct class of SEMs, we consider the performance of each algorithm under 
+various distinct sample sizes ranging from $T=25$ to $T=500$ samples. 
+Furthermore, each experiment is repeated 250 times. For each repetition, 
+we generate synthetic bivariate data by first sampling $n_1$ and $n_2$
+from a standard Laplace distribution and then passing through equation (\ref{eq:SEMgen}). 
+%We consider datasets of varying sample sizes, ranging from 25 to 500 observations. 
+%We randomly alternate between $x_1$ 
+
+%linear and nonlinear SEMs:
+%\begin{itemize}
+%	\item LiNGAM: $X_2 = \alpha X_1 + N_2 $
+%	\item Additive noise model: $X_2 = X_1 +  \alpha X_1^3 + N_2 $
+%	\item Two layer neural network: $X_2 = \sigma \left (  \sigma \left ( \alpha X_1 \right ) + N_2 \right )$
+%\end{itemize}
+
+
+
+
+\begin{figure}[ht]
+\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{Figures/CausalDiscFigure.png}}
+\caption{Performance of various algorithms on synthetic data generated under three
+distinct SEMs over varying complexity. We note that for all three SEMs the proposed
+method performs competitively and is able to robustly identify the underlying causal direction. }
+\label{Fig:causalDiscSimulations}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+Results are presented in Figure \ref{Fig:causalDiscSimulations}. 
+The left panel consider the case of linear SEMs with non-Gaussian disturbances. In such a setting, all
+algorithms perform competitively as the sample size increases. 
+The middle panel shows results under a nonlinear additive noise model\footnote{We note that a 
+similar model is studied in \cite{Hoyer2009}}. 
+We note that the linear method of \cite{Hyvarinen2013} performs particularly 
+poorly in this setting. 
+Finally, in the right panel we consider a nonlinear model with non-additive noise structure. 
+In this setting, only the proposed method is able to consistently uncover the true causal direction. 
+
+\subsubsection*{Results on cause effect pairs data}
+
+We consider performance of the proposed method on cause-effect pairs benchmark dataset
+\citep{mooij2016distinguishing}. 
+
+\begin{table}[h!]
+	\caption{Performance of identification of the  correct 
+		causal direction on 108 pairs from the Cause Effect Pairs dataset.}
+	\label{sample-table}
+	\vskip 0.15in
+	\begin{center}
+		\begin{small}
+			\begin{sc}
+				\begin{tabular}{ccccr}
+					\toprule
+					 Proposed & Linear LR & ANM  & RECI    \\
+					\midrule
+					  73 $\%$ & 66$\%$ & 69 $\%$   &  69$\%$ \\
+					\bottomrule
+				\end{tabular}
+			\end{sc}
+		\end{small}
+	\end{center}
+	\vskip -0.1in
+\end{table}
+
+
+\section{Flow-based causal inference}
+\label{sec::flowCI}
+
+The previous section exploited the fact that autoregressive flow architectures are able to estimate
+normalized log-densities of data subject to an ordering over variables.  
+In this section, we further exploit the \textit{invertible} nature of flow architectures in 
+order to perform both interventional and counterfactual inference. 
+%
+Throughout this section we assume:
+\begin{enumerate}[a)]
+	\item the associated causal ordering over variables in known, e.g.,  as the
+	result of expert judgment or a randomized control trial or as by using some of the methods 
+	described in Section \ref{sec::flowCD}.
+	\item we train an autoregressive flow model conditional on such an ordering via maximum likelihood.
+\end{enumerate}
+
+\subsection*{Interventions}
+
+We now demonstrate how the $do$ operator of \cite{Pearl2009}
+can be  incorporated into autoregressive flow models. 
+For simplicity, we focus on performing interventions over root nodes in the associated 
+DAG, which are assumed known\footnote{This simplifies issues as such nodes have no parents in the DAG and thus there is a one-to-one mapping between the observed variable and 
+the corresponding latent variable. Performing interventions over non-root variables
+would require marginalizing over the parents in the DAG, which could be achieved empirically.}. 
+As described in \cite{Pearl2009}, %and \cite{pearl2009causal}, 
+intervention on a given variable $x_i$ defines a new 
+\textit{mutilated} generative model
+the structural equation associated with variable $x_i$ is replaced by the interventional value.
+More formally, the intervention $do( x_i = \alpha)$ changes the structural equation for variable 
+$x_i$ from $x_i = f_i( \mathbf{pa}_i, n_i)$ to $x_i = \alpha$. 
+This is further simplified if $x_i$ is a root node as this implies that $\mathbf{PA_i} = \emptyset$. 
+This allows us to directly infer the value of the
+latent variable, $n_i$, associated with the intervention as
+%associated latent variable as 
+$n_i = f_i^{-1}( x_i = \alpha)$. Thereafter, we can directly draw samples from 
+the base distribution of our flow model for all remaining latent variables and obtain an 
+empirical estimate for the interventional distribution. This is described in Algorithm \ref{alg:internvention}. 
+
+\begin{algorithm}[hb]
+   \caption{Generate samples from an interventional distribution}
+   \label{alg:internvention}
+\begin{algorithmic}
+   \STATE {\bfseries Input:}  interventional (root) variable $x_i$, intervention value $\alpha$, number of samples $T$
+   \STATE Infer $n_i$ by inverting flow: $n_i = f_i^{-1}( \alpha)$. 
+   \FOR{$t=1$ {\bfseries to} $T$}
+   \STATE sample $n_j(t)$ from flow base distribution for $j\neq i$
+   \STATE set $n_i(t) = n_i$
+   \STATE generate interventional sample as $x(t) = \mathbf{f}( n(t))$, i.e., 
+   by passing $n(t)$ through flow. 
+%   \FOR{ $j\neq i$}
+%   \STATE  sample $n_j(i)$ from flow base distribution
+%   \ENDFOR
+   \ENDFOR
+   \RETURN samples $\mathbf{x} = \{x(t): t=1, \ldots, T\}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection*{Toy example}
+As a simple toy example we consider the following SEM:
+\begin{align}
+\begin{split}
+\label{intervention_SEM}
+x_1 &= n_1\\
+x_2 &= n_2\\
+x_3 &= x_1 + \frac{1}{2} x_2^3 + n_3\\
+x_4 &= \frac{1}{2} x_1^2 - x_2 + n_4
+\end{split}
+\end{align}
+where each $n_i$ is drawn independently from a standard Laplace distribution. 
+We consider the expected values of $x_3$ and $x_4$ under various distinct 
+interventions to variable $x_1$. 
+From the SEM above we note that 
+$\mathbb{E}[x_3 | do(x_1=x)] = x $ and 
+$\mathbb{E}[x_4 | do(x_1=x)] =  \frac{1}{2} x^2 $.
+The inferred predictive means are shown in Figure \ref{Fig:interventionExample1}
+are consistent with the true interventional distribution.  
+
+\begin{figure}[ht]
+	\vskip 0.2in
+	\begin{center}
+		\centerline{\includegraphics[width=.5\columnwidth]{Figures/Intervention_Fig1.png}}
+		\caption{Predicted expectations for variables $X_3$ and $X_4$ under intervention $do(X_1=x)$ for $x\in [-3, 3]$. Note that 
+		flow is able to accurately learn the form the interventional distributions; linear in the case of $X_3$ and
+		quadratic for $X_4$ as stipulated in equation (\ref{intervention_SEM}).   }
+		\label{Fig:interventionExample1}
+	\end{center}
+	\vskip -0.2in
+\end{figure}
+
+\subsubsection*{Things that require improvement}
+\begin{itemize}
+	\item how to perform interventions on non-root variables. Due to the autoregressive nature of the 
+	flow, this will require us to evaluate $n_i = \int f_i^{-1}( \mathbf{pa}_i, x_i) ~ d\mathbf{pa}_i$. This can 
+	probably be approximated via bootstrapping observations across the parent variables but maybe 
+	it is possible to do something smarter. 
+	\item what alternative baseline algorithms/datasets are available to evaluate the proposed method?
+\end{itemize}
+
+
+\newpage
+
+\subsection*{Counterfactuals} 
+
+A counterfactual query seeks 
+quantify statements of the form: what would the value for variable $X_i$ have been if variable $X_j$ had taken 
+value $\tilde x_j$, \textbf{given that we have observed} $X=x$? 
+While 
+structural equation models introduce strong assumptions, they also 
+facilitate the 
+estimation of counterfactual queries as described above. 
+By construction, the value of observed variables 
+$X$ is fully determined by noise/latent variables $Z$ and the associated structural equations. 
+As such, given a set of structural equations and an observation $X=x$, 
+%we are able to calculate the 
+we follow the notation of \cite{Pearl2009} and write 
+${X_i}_{X_j \leftarrow \tilde x_j}(Z)$
+to denote the 
+value of $X_i$ under the counterfactual that $X_j\leftarrow \tilde{x_j}$ given observation $X= T(Z)$. 
+
+
+%Following \cite{Pearl2009}, we write 
+%$X_{X_i \leftarrow \tilde x_i}(Z)$ to denote the counterfactual of $X$ 
+
+The process of obtaining counterfactual predictions is described in 
+\cite{pearl2009causal} as consisting of three steps:
+\begin{enumerate}
+	\item \textbf{Abduction}: given an observation $X$, infer the conditional distribution/values over 
+	latent variables $Z$. 
+	In the context of an autoregressive flow model this is obtained as $Z= T^{-1} ( X )$. 
+	\item \textbf{Action}: substitute
+	the equations for $Z$ with the interventional values z, 
+	based on the counterfactual query, $X_{X_j \leftarrow \tilde x_j}$.
+	More concretely, for a counterfactual, $X_{X_j \leftarrow \tilde x_j}$, we 
+	replace the 
+	structural equations for $X_j$ with 
+	$X_j = \tilde x_j$ and 
+	adjust the inferred value of latent $z_j$ accordingly. 
+	As was the case with interventions, 
+	if $X_j$ is a root node, then $z_j = f_j^{-1}( \tilde x_j)$
+	
+	\item \textbf{Prediction}:  compute the implied distribution over $X$ by propagating latent variables, $Z$, 
+	through the structural equation models. 
+\end{enumerate}
+
+
+
+\subsubsection*{Toy example}
+We continue with the simple 4 dimensional structural equation model
+described in equation (\ref{intervention_SEM}). 
+We assume we observe $X^{obs} = (2.00  ,  1.50 ,  0.81, -0.28)$
+and consider the counterfactual 
+values under two distinct scenarios:
+\begin{itemize}
+	\item  the expected counterfactual value $X_4$ if $X_1=x$ for $x \in [-3,3,]$ instead of
+	$X_1=2$ as was observed. This is denoted as $\mathbb{E}[{X_4}_{X_1\leftarrow x}(Z) | X^{obs} ]$.
+	\item the expected counterfactual value $X_3$ if $X_2=x$ for $x \in [-3,3,]$ instead of
+	$X_2=1.5$ as was observed. This is denoted as $\mathbb{E}[{X_3}_{X_2\leftarrow x}(Z) | X^{obs} ]$.
+\end{itemize}
+%
+As the true structural equations are provided in equation (\ref{intervention_SEM}), we are able to
+compute the true counterfactual expectations and compare these to 
+results obtained from an autoregressive flow model. Results, provided in Figure \ref{Fig:counterfactualExample1}, 
+highlight the strengths of such an approach.  
+
+
+
+\begin{figure}[ht]
+	\vskip 0.2in
+	\begin{center}
+		\centerline{\includegraphics[width=.8\columnwidth]{Figures/Counterfactual_Fig1.png}}
+		\caption{Predicted and true counterfactual expectations  for variables $X_3$ and $X_4$. Note that 
+			flow is able to accurately learn the counterfactual expectations; 
+			quadratic in the case of  $X_4$ under a counterfactual on variable $X_1$ and 
+			cubic for $X_3$ when considering counterfactuals on $X_2$.   }
+		\label{Fig:counterfactualExample1}
+	\end{center}
+	\vskip -0.2in
+\end{figure}
+
+
+\newpage 
+\bibliographystyle{plainnat}
+\bibliography{library.bib}
+
+
+\end{document}

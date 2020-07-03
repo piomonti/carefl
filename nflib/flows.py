@@ -85,6 +85,136 @@ class ActNorm(AffineConstantFlow):
         return super().forward(x)
 
 
+class AffineFullFlow(nn.Module):
+    """
+    As seen in RealNVP, affine autoregressive flow (z = x * exp(s) + t), where half of the 
+    dimensions in x are linearly scaled/transfromed as a function of the other half.
+    Which half is which is determined by the parity bit.
+    - RealNVP both scales and shifts (default)
+    - NICE only shifts
+
+    we make some changes here. These include:
+     - shift and scale transform on first input as well (so there is no untouched half as before)
+     - 
+
+    """
+    def __init__(self, dim, parity, net_class=MLP, nh=24, scale=True, shift=True):
+        super().__init__()
+        self.dim = dim
+        self.parity = parity
+        self.s_cond = lambda x: x.new_zeros(x.size(0), self.dim // 2)
+        self.t_cond = lambda x: x.new_zeros(x.size(0), self.dim // 2)
+        if scale:
+            self.s_cond  = net_class(self.dim // 2, self.dim // 2, nh)
+            self.s_cond0 = net_class( self.dim // 2, self.dim // 2, 1 )
+        if shift:
+            self.t_cond  = net_class(self.dim // 2, self.dim // 2, nh)
+            self.t_cond0 = net_class( self.dim // 2, self.dim // 2, 1 )
+        
+    def forward(self, x):
+        x0, x1 = x[:,::2], x[:,1::2]
+        if self.parity:
+            x0, x1 = x1, x0
+        s  = self.s_cond( x0 )
+        t  = self.t_cond( x0 )
+        s0 = self.s_cond0( torch.ones_like(x0) ) # we parameterize like this, might not be the most efficient 
+        t0 = self.t_cond0( torch.ones_like(x0) ) # x0
+        # first apply shift and scaling to x0
+        z0 = torch.exp( s0 ) * x0 + t0 
+        #z0 = x0 # untouched half
+        # then apply transformation to x1 
+        z1 = torch.exp(s) * x1 + t # transform this half as a function of the other
+        if self.parity:
+            z0, z1 = z1, z0
+        z = torch.cat([z0, z1], dim=1)
+        log_det = torch.sum(s, dim=1) + torch.sum(s0, dim=1)
+        return z, log_det
+    
+    def backward(self, z):
+        # note that backward pass is not used during training ! 
+        # the code below is incorrect as it does not incorporate s_cond0 and t_cond0 above !
+        # update: code has been amended and correctly working!
+        z0, z1 = z[:,::2], z[:,1::2]
+        if self.parity:
+            z0, z1 = z1, z0
+        s0 = self.s_cond0( torch.ones_like(z0) )
+        t0 = self.t_cond0( torch.ones_like(z0) )
+        x0 = (z0 - t0) * torch.exp(-s0) 
+        s  = self.s_cond( x0 )
+        t  = self.t_cond( x0 )
+        #x0 = z0 # this was the same
+        x1 = (z1 - t) * torch.exp(-s) # reverse the transform on this half
+        if self.parity:
+            x0, x1 = x1, x0
+        x = torch.cat([x0, x1], dim=1)
+        log_det = torch.sum(-s, dim=1) + torch.sum(-s0, dim=1)
+        return x, log_det
+
+class AffineFullFlowGeneral(nn.Module):
+    """
+    As seen in RealNVP, affine autoregressive flow (z = x * exp(s) + t), where half of the 
+    dimensions in x are linearly scaled/transfromed as a function of the other half.
+    Which half is which is determined by the parity bit.
+    - RealNVP both scales and shifts (default)
+    - NICE only shifts
+    
+    we generalize the AffineFullFlow class to consider
+    higher dimensional case (instead of just bivariate case!)
+
+    """
+    def __init__(self, dim, parity, net_class=MLP, nh=24, scale=True, shift=True):
+        super().__init__()
+        self.dim = dim
+        self.parity = parity
+        self.s_cond = lambda x: x.new_zeros(x.size(0), self.dim // 2)
+        self.t_cond = lambda x: x.new_zeros(x.size(0), self.dim // 2)
+        if scale:
+            self.s_cond  = net_class( self.dim // 2, self.dim // 2, nh)
+            self.s_cond0 = net_class( self.dim // 2, self.dim // 2, 1 )
+        if shift:
+            self.t_cond  = net_class( self.dim // 2, self.dim // 2, nh)
+            self.t_cond0 = net_class( self.dim // 2, self.dim // 2, 1 )
+        
+    def forward(self, x):
+        d = int( x.shape[1] / 2 )
+        x0, x1 = x[:,:d], x[:,d:]
+        if self.parity:
+            x0, x1 = x1, x0
+        s  = self.s_cond( x0 )
+        t  = self.t_cond( x0 )
+        s0 = self.s_cond0( torch.ones_like(x0) ) # we parameterize like this, might not be the most efficient 
+        t0 = self.t_cond0( torch.ones_like(x0) ) # x0
+        # first apply shift and scaling to x0
+        z0 = torch.exp( s0 ) * x0 + t0 
+        #z0 = x0 # untouched half
+        # then apply transformation to x1 
+        z1 = torch.exp(s) * x1 + t # transform this half as a function of the other
+        if self.parity:
+            z0, z1 = z1, z0
+        z = torch.cat([z0, z1], dim=1)
+        log_det = torch.sum(s, dim=1) + torch.sum(s0, dim=1)
+        return z, log_det
+    
+    def backward(self, z):
+        # note that backward pass is not used during training ! 
+        # the code below is incorrect as it does not incorporate s_cond0 and t_cond0 above !
+        d = int( z.shape[1] / 2 )
+        z0, z1 = z[:,:d], z[:,d:]
+        if self.parity:
+            z0, z1 = z1, z0
+        s0 = self.s_cond0( torch.ones_like(z0) )
+        t0 = self.t_cond0( torch.ones_like(z0) )
+        x0 = (z0 - t0) * torch.exp(-s0) 
+        s  = self.s_cond( x0 )
+        t  = self.t_cond( x0 )
+        #x0 = z0 # this was the same
+        x1 = (z1 - t) * torch.exp(-s) # reverse the transform on this half
+        if self.parity:
+            x0, x1 = x1, x0
+        x = torch.cat([x0, x1], dim=1)
+        log_det = torch.sum(-s, dim=1) + torch.sum(-s0, dim=1)
+        return x, log_det
+
 class AffineHalfFlow(nn.Module):
     """
     As seen in RealNVP, affine autoregressive flow (z = x * exp(s) + t), where half of the 
@@ -119,6 +249,7 @@ class AffineHalfFlow(nn.Module):
         return z, log_det
     
     def backward(self, z):
+        # note that backward pass is not used during training ! 
         z0, z1 = z[:,::2], z[:,1::2]
         if self.parity:
             z0, z1 = z1, z0
@@ -131,7 +262,6 @@ class AffineHalfFlow(nn.Module):
         x = torch.cat([x0, x1], dim=1)
         log_det = torch.sum(-s, dim=1)
         return x, log_det
-
 
 class SlowMAF(nn.Module):
     """ 
@@ -295,65 +425,65 @@ class NormalizingFlowModel(nn.Module):
 
 
 
-class ClassCondNormalizingFlowModel(nn.Module):
-    """
+# class ClassCondNormalizingFlowModel(nn.Module):
+#     """
 
-    A normalizing flow that also takes classes as inputs 
+#     A normalizing flow that also takes classes as inputs 
 
-    This is a special architecture in an attempt to solve nonlinear ICA 
-    via maximum likelihood.
+#     This is a special architecture in an attempt to solve nonlinear ICA 
+#     via maximum likelihood.
 
-    As such, we assume data is generated as a smooth invertible mixture, f, of 
-    latent variables s. Further, we assume latent variables follow a piecewise 
-    stationary distribution (see Hyvarinen & Morioka, 2016 or Khemakhem et al 2020 for details)
+#     As such, we assume data is generated as a smooth invertible mixture, f, of 
+#     latent variables s. Further, we assume latent variables follow a piecewise 
+#     stationary distribution (see Hyvarinen & Morioka, 2016 or Khemakhem et al 2020 for details)
 
-    The flow will be composed of two parts:
-     - the first, will seek to invert the nonlinear mixing (ie to 
-       compute g = f^{-1})
-     - the second to estimate the exponential family parameters associated 
-       with each segment (the Lambdas in the above papers)
+#     The flow will be composed of two parts:
+#      - the first, will seek to invert the nonlinear mixing (ie to 
+#        compute g = f^{-1})
+#      - the second to estimate the exponential family parameters associated 
+#        with each segment (the Lambdas in the above papers)
 
-    This essentially means each segment will have a distinct prior distribution (I think!)
+#     This essentially means each segment will have a distinct prior distribution (I think!)
 
-    """
+#     """
     
-    def __init__(self, prior, flows, classflows):
-        super().__init__()
-        self.prior = prior
-        self.flow = NormalizingFlow(flows)
-        self.classflows = [ NormalizingFlow(nf) for nf in classflows ] # classflows should be a list of flows, one per class
+#     def __init__(self, prior, flows, classflows):
+#         super().__init__()
+#         self.prior = prior
+#         self.flow = NormalizingFlow(flows)
+#         self.classflows = [ NormalizingFlow(nf) for nf in classflows ] # classflows should be a list of flows, one per class
     
-    def forward(self, x, e):
-        """
-        e is the segment class (zero indexed integer)
-        """
-        # pass through the shared flow first:
-        zs, log_det = self.flow.forward(x)
-        # then through the class conditional flow:
-        forward_e = self.classflows[e].forward(zs[-1])
-        zs_e = forward_e[0]
-        log_det_e = log_det + forward_e[1]
+#     def forward(self, x, e):
+#         """
+#         e is the segment class (zero indexed integer)
+#         """
+#         # pass through the shared flow first:
+#         zs, log_det = self.flow.forward(x)
+#         # then through the class conditional flow:
+#         forward_e = self.classflows[e].forward(zs[-1])
+#         zs_e = forward_e[0]
+#         log_det_e = log_det + forward_e[1]
 
-        prior_logprob = self.prior.log_prob(zs[-1]).view(x.size(0), -1).sum(1)
-        return zs_e, prior_logprob, log_det_e
+#         prior_logprob = self.prior.log_prob(zs[-1]).view(x.size(0), -1).sum(1)
+#         return zs_e, prior_logprob, log_det_e
 
-    def backward(self, z, e):
-        """
-        e is the segment class (zero indexed integer)
-        """
-        # backward pass through the class conditional flow first:
-        xs_e, log_det_e = self.classflows[e].backward( z )
-        # then through the shared flow:
-        xs, log_det = self.flow.backward(z[-1])
-        return xs, log_det + lod_deg_e
+#     def backward(self, z, e):
+#         """
+#         e is the segment class (zero indexed integer)
+#         """
+#         # backward pass through the class conditional flow first:
+#         xs_e, log_det_e = self.classflows[e].backward( z )
+#         # then through the shared flow:
+#         xs, log_det = self.flow.backward(z[-1])
+#         return xs, log_det + lod_deg_e
     
-    def sample(self, num_samples, e):
-        z = self.prior.sample((num_samples,))
-        # backward pass through the class conditional flow first:
-        xs_e, log_det_e = self.classflows[e].backward( z )
-        # then through the shared flow:
-        xs, _ = self.flow.backward(xs_e[-1])
-        return xs
+#     def sample(self, num_samples, e):
+#         z = self.prior.sample((num_samples,))
+#         # backward pass through the class conditional flow first:
+#         xs_e, log_det_e = self.classflows[e].backward( z )
+#         # then through the shared flow:
+#         xs, _ = self.flow.backward(xs_e[-1])
+#         return xs
 
 
 

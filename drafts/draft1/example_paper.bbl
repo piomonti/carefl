@@ -1,0 +1,123 @@
+\begin{thebibliography}{18}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Bl{\"{o}}baum et~al.(2018)Bl{\"{o}}baum, Janzing, Washio, Shimizu, and
+  Sch{\"{o}}lkopf]{Blobaum2018}
+Patrick Bl{\"{o}}baum, Dominik Janzing, Takashi Washio, Shohei Shimizu, and
+  Bernhard Sch{\"{o}}lkopf.
+\newblock {Cause-Effect Inference by Comparing Regression Errors}.
+\newblock \emph{AISTATS}, 2018.
+
+\bibitem[Dinh et~al.(2016)Dinh, Sohl-Dickstein, and Bengio]{dinh2016density}
+Laurent Dinh, Jascha Sohl-Dickstein, and Samy Bengio.
+\newblock Density estimation using real nvp.
+\newblock \emph{arXiv preprint arXiv:1605.08803}, 2016.
+
+\bibitem[Hoyer et~al.(2009)Hoyer, Janzing, Mooij, Peters, and
+  Sch{\"{o}}lkopf]{Hoyer2009}
+Patrik~O Hoyer, Dominik Janzing, Joris~M. Mooij, Jonas Peters, and Bernhard
+  Sch{\"{o}}lkopf.
+\newblock {Nonlinear causal discovery with additive noise models}.
+\newblock \emph{Neural Inf. Process. Syst.}, pages 689--696, 2009.
+
+\bibitem[Huang et~al.(2018)Huang, Krueger, Lacoste, and
+  Courville]{huang2018neural}
+Chin-Wei Huang, David Krueger, Alexandre Lacoste, and Aaron Courville.
+\newblock Neural autoregressive flows.
+\newblock \emph{arXiv preprint arXiv:1804.00779}, 2018.
+
+\bibitem[Hyv{\"{a}}rinen and Smith(2013)]{Hyvarinen2013}
+Aapo Hyv{\"{a}}rinen and Stephen~M Smith.
+\newblock {Pairwise Likelihood Ratios for Estimation of Non-Gaussian Structural
+  Equation Models}.
+\newblock \emph{J. Mach. Learn. Res.}, 14:\penalty0 111--152, 2013.
+
+\bibitem[Khemakhem et~al.(2019)Khemakhem, Kingma, and
+  Hyv{\"a}rinen]{khemakhem2019variational}
+Ilyes Khemakhem, Diederik~P Kingma, and Aapo Hyv{\"a}rinen.
+\newblock Variational autoencoders and nonlinear ica: A unifying framework.
+\newblock \emph{arXiv preprint arXiv:1907.04809}, 2019.
+
+\bibitem[Kobyzev et~al.(2019)Kobyzev, Prince, and
+  Brubaker]{kobyzev2019normalizing}
+Ivan Kobyzev, Simon Prince, and Marcus~A Brubaker.
+\newblock Normalizing flows: Introduction and ideas.
+\newblock \emph{arXiv preprint arXiv:1908.09257}, 2019.
+
+\bibitem[Monti et~al.(2019)Monti, Zhang, and Hyvarinen]{monti2019causal}
+Ricardo~Pio Monti, Kun Zhang, and Aapo Hyvarinen.
+\newblock Causal discovery with general non-linear relationships using
+  non-linear {I}{C}{A}.
+\newblock \emph{arXiv preprint arXiv:1904.09096}, 2019.
+
+\bibitem[Mooij et~al.(2016)Mooij, Peters, Janzing, Zscheischler, and
+  Sch{\"o}lkopf]{mooij2016distinguishing}
+Joris~M Mooij, Jonas Peters, Dominik Janzing, Jakob Zscheischler, and Bernhard
+  Sch{\"o}lkopf.
+\newblock Distinguishing cause from effect using observational data: methods
+  and benchmarks.
+\newblock \emph{The Journal of Machine Learning Research}, 17\penalty0
+  (1):\penalty0 1103--1204, 2016.
+
+\bibitem[Neyman and Pearson(1933)]{neyman1933ix}
+Jerzy Neyman and Egon~Sharpe Pearson.
+\newblock Ix. on the problem of the most efficient tests of statistical
+  hypotheses.
+\newblock \emph{Philosophical Transactions of the Royal Society of London.
+  Series A, Containing Papers of a Mathematical or Physical Character},
+  231\penalty0 (694-706):\penalty0 289--337, 1933.
+
+\bibitem[Papamakarios et~al.(2019)Papamakarios, Nalisnick, Rezende, Mohamed,
+  and Lakshminarayanan]{papamakarios2019normalizing}
+George Papamakarios, Eric Nalisnick, Danilo~Jimenez Rezende, Shakir Mohamed,
+  and Balaji Lakshminarayanan.
+\newblock Normalizing flows for probabilistic modeling and inference.
+\newblock \emph{arXiv preprint arXiv:1912.02762}, 2019.
+
+\bibitem[Pearl(2009)]{Pearl2009}
+Judea Pearl.
+\newblock \emph{{Causality}}.
+\newblock Cambridge University Press, 2009.
+
+\bibitem[Pearl et~al.(2009)]{pearl2009causal}
+Judea Pearl et~al.
+\newblock Causal inference in statistics: An overview.
+\newblock \emph{Statistics surveys}, 3:\penalty0 96--146, 2009.
+
+\bibitem[Peters et~al.(2014)Peters, Mooij, Janzing, and
+  Sch{\"{o}}lkopf]{Peters2013}
+Jonas Peters, J~Mooij, Dominik Janzing, and Bernhard Sch{\"{o}}lkopf.
+\newblock {Causal discovery with continuous additive noise models}.
+\newblock \emph{J. Mach. Learn. Res.}, 15:\penalty0 2009--2053, 2014.
+
+\bibitem[Shimizu et~al.(2006)Shimizu, Hoyer, Hyv{\"{a}}rinen, and
+  Kerminen]{Shimizu2006}
+Shohei Shimizu, Patrik~O Hoyer, Aapo Hyv{\"{a}}rinen, and Antti Kerminen.
+\newblock {A Linear Non-Gaussian Acyclic Model for Causal Discovery}.
+\newblock \emph{J. Mach. Learn. Res.}, 7:\penalty0 2003--2030, 2006.
+
+\bibitem[Spirtes and Zhang(2016)]{spirtes2016causal}
+Peter Spirtes and Kun Zhang.
+\newblock Causal discovery and inference: concepts and recent methodological
+  advances.
+\newblock In \emph{Applied informatics}, volume~3, page~3. Springer, 2016.
+
+\bibitem[Spirtes et~al.(2000)Spirtes, Glymour, Scheines, Heckerman, Meek, and
+  Richardson]{Spirtes2000}
+Peter Spirtes, Clark Glymour, Richard Scheines, David Heckerman, Christopher
+  Meek, and Thomas Richardson.
+\newblock \emph{{Causation, Prediction and Search}}.
+\newblock MIT Press, 2000.
+
+\bibitem[Zheng et~al.(2018)Zheng, Aragam, Ravikumar, and Xing]{zheng2018dags}
+Xun Zheng, Bryon Aragam, Pradeep~K Ravikumar, and Eric~P Xing.
+\newblock {D}{A}{G}s with {N}{O} {T}{E}{A}{R}{S}: Continuous optimization for
+  structure learning.
+\newblock In \emph{Advances in Neural Information Processing Systems}, pages
+  9472--9483, 2018.
+
+\end{thebibliography}

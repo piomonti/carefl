@@ -27,12 +27,13 @@ import torch.autograd as autograd
 from torch.utils.data import DataLoader
 
 # load flows
-os.chdir('..')
+#os.chdir('..')
 #os.chdir('/nfs/ghome/live/ricardom/FlowNonLinearICA/')
 #os.chdir('/Users/ricardo/Documents/Projects/FlowNonLinearICA')
-from nflib.flows import AffineConstantFlow, MAF, NormalizingFlowModel, Invertible1x1Conv, ActNorm, ClassCondNormalizingFlowModel
+from nflib.flows import AffineConstantFlow, MAF, NormalizingFlowModel, Invertible1x1Conv, ActNorm #, ClassCondNormalizingFlowModel
 from nflib.spline_flows import NSF_AR, NSF_CL
-from data.generateToyData import CustomSyntheticDatasetDensity, CustomSyntheticDatasetDensityClasses
+from data.custom_synth_class import CustomSyntheticDatasetDensity 
+#from data.generateToyData import CustomSyntheticDatasetDensity, CustomSyntheticDatasetDensityClasses
 
 class Flow( nn.Module ):
     """
@@ -58,7 +59,7 @@ class Flow( nn.Module ):
         self.train_loader = DataLoader( dset, shuffle=True, batch_size=128 )
 	
 
-    def train( self, epochs = 100, verbose=False ):
+    def train( self, epochs = 100, optMethod='adam', verbose=False ):
         """
         train the model
         """
@@ -66,7 +67,12 @@ class Flow( nn.Module ):
         # define parameters
         params = list( self.flow_share.parameters() ) 
         # define optimizer 
-        optimizer = optim.Adam( params , lr=1e-4, weight_decay=1e-5) # todo tune WD
+        if optMethod=='adam':
+            optimizer = optim.Adam( params , lr=1e-4, weight_decay=1e-5 ) # todo tune WD
+        else:
+            #print('scheduling')
+            optimizer = optim.Adam( params , lr=1e-4, weight_decay=1e-5 ) # todo tune WD
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau( optimizer, factor=0.1, patience=3, verbose=verbose)
 
         if self.device!='cpu':
             self.flow_share.to( self.device )
@@ -79,7 +85,7 @@ class Flow( nn.Module ):
             loss_val = 0
             for _, dat in enumerate( self.train_loader ):
                 dat.to( self.device )
-                dat.cuda()
+                #dat.cuda()
                 # forward pass:
                 z_share, prior_logprob, log_det_share = self.flow_share( dat )
                 logprob = prior_logprob + log_det_share
@@ -99,10 +105,25 @@ class Flow( nn.Module ):
                 # update parameters
                 optimizer.step()
 
+            # update scheduler
+            if optMethod!='adam':
+                scheduler.step( loss_val / len(self.train_loader) ) 
+
             if verbose:
                 print('epoch {}/{} \tloss: {}'.format(e, epochs, loss_val))
             loss_vals.append( loss_val )
         return loss_vals
+
+    def EvalLL( self, x):
+        """
+        evaluate log likelihood of model
+        """
+
+        z_share, prior_logprob, log_det_share = self.flow_share( torch.tensor( x.astype( np.float32 ) ) )
+        logprob = prior_logprob + log_det_share
+
+        return logprob.cpu().detach().numpy()
+
 
     def forwardPassFlow( self, x ):
         """
@@ -110,6 +131,13 @@ class Flow( nn.Module ):
         """
         x_forward, _, _ = self.flow_share( torch.tensor( x.astype( np.float32 ) ) )
         return x_forward[-1].cpu().detach().numpy()
+
+    def backwardPassFlow( self, z ):
+        """
+        pass latents through the flow
+        """
+        x_backward, _ = self.flow_share.backward( torch.tensor( z.astype( np.float32 ) ) )
+        return x_backward[-1].cpu().detach().numpy()
 
 
 
@@ -138,7 +166,7 @@ class ClassCondFlow( nn.Module ):
 
     def __init__( self, prior, flows, classflows, device='cpu'):
         super().__init__()
-        print('initializing with: ' + str(device))
+        #print('initializing with: ' + str(device))
         self.device        = device
         self.prior         = prior
         self.flow_share    = NormalizingFlowModel( prior, flows ).to(device)
