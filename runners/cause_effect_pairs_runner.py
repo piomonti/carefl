@@ -30,11 +30,9 @@ from torch.utils.data import DataLoader
 from nflib.flows import AffineConstantFlow, MAF, NormalizingFlowModel, Invertible1x1Conv, ActNorm
 from nflib.spline_flows import NSF_AR, NSF_CL
 from CauseEffectPairs.Run_CEP_01 import * 
-from models.classConditionalFlow import Flow #, ClassCondFlow
+from models.classConditionalFlow import Flow 
 from models.bivariateFlowCD import BivariateFlowCD
-
 from sklearn.decomposition import FastICA, PCA
-
 import pickle 
 
 # define some simulation parameters

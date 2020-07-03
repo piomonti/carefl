@@ -35,13 +35,10 @@ from models.classConditionalFlow import Flow #, ClassCondFlow
 from models.bivariateFlowCD import BivariateFlowCD
 
 # load baselines
-#from cdt.causality.pairwise import IGCI
 from models.baselines import base_entropy_ratio, linear_notears_dir, ANM, cumulant_hyv13_ratio, RECI, nonlinear_notears_dir, NotearsMLP, notears_nonlinear
 
 # load data generating code:
 from data.generate_synth_data import gen_synth_causal_dat
-#from cdt.data import CausalPairGenerator
-#from cdt.data.causal_mechanisms import uniform_noise
 
 from sklearn.decomposition import FastICA, PCA
 import pickle 
@@ -113,7 +110,7 @@ def RunSimulations( nSims=25, nPoints=100, causal_mechanism='linear',
 
     return results
 
-if True:
+if False:
     nvals = [ 25, 50, 75, 100,  150, 250, 500 ]
     results = []
     causal_mechanism = 'nueralnet_l1' # 'linear' #   'hoyer2009' #  'linear' #   'nueralnet_l1' # 
