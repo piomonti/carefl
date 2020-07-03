@@ -6,6 +6,6 @@ This repository contains code to reproduce results presented in "Autoregressive 
 To reproduce the simulations, run for e.g.:
 
 ```
-python simulations.py --dataset all --nSims 100 --plot
+python main.py --dataset all --nSims 250 --plot
 ```
 
