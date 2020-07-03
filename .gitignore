@@ -7,6 +7,8 @@ __pycache__/
 # C extensions
 *.so
 
+
+
 # Distribution / packaging
 .Python
 build/
@@ -143,5 +145,6 @@ run/
 *.pdf
 *.png
 
+drafts/
 
 slurm_log/
