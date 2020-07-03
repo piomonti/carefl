@@ -20,13 +20,14 @@ def parse_input():
     parser.add_argument('--resultsDir', type=str, default='results/', help='Path for saving results.')
 
     parser.add_argument('--plot', action='store_true', help='Should we plot results' )
+    parser.add_argument('--runCEP', action='store_true', help='Run Cause Effect Pairs experiments')
 
     return parser.parse_args()
 
 if __name__ == '__main__':
     args = parse_input()
 
-    if args.dataset in ['all',  'linear', 'hoyer2009', 'nueralnet_l1']:
+    if (args.dataset in ['all',  'linear', 'hoyer2009', 'nueralnet_l1']) & (not args.runCEP):
         print('Running {} synthetic experiments. Will run {} simulations'.format( args.dataset, args.nSims ))
 
         if args.dataset == 'all':
@@ -49,7 +50,7 @@ if __name__ == '__main__':
             import pickle
             pickle.dump( results, open( args.resultsDir + causal_mechanism + "_results.p", 'wb') )
 
-    if args.plot:
+    if (args.plot) & (not args.runCEP):
         # produce a plot of synthetic results
         import seaborn as sns         
         import pylab as plt 
@@ -117,4 +118,8 @@ if __name__ == '__main__':
         plt.tight_layout()
         plt.subplots_adjust(right=0.87)
         plt.savefig( 'CausalDiscSims.pdf', dpi=300 )
+
+    if ( args.runCEP):
+        print('running cause effect pairs experiments ')
+        os.system('ipython3 runners/cause_effect_pairs_runner.py')
 
