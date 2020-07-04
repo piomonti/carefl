@@ -1,4 +1,4 @@
-### run flow based likelihood ratio for a given CEP dataset 
+### run flow based likelihood ratio for a given CEP dataset
 #
 #
 # we take cause effect pairs (CEP) from Mooij et al (2016, JMLR)
@@ -20,7 +20,7 @@ from models.classConditionalFlow import Flow  # , ClassCondFlow
 from nflib.flows import AffineConstantFlow, AffineFullFlow
 from nflib.nets import MLP1layer
 
-PairDataDir = 'pairs/'
+PairDataDir = 'CauseEffectPairs/pairs/'
 
 
 def runCEPair(pair_id, Nlayers, Nhidden, priorDist='laplace', TrainSplit=1., epochs=100, optMethod='adam',
@@ -36,7 +36,7 @@ def runCEPair(pair_id, Nlayers, Nhidden, priorDist='laplace', TrainSplit=1., epo
     pair_id = str(pair_id)
     pair_id = '0' * (4 - len(pair_id)) + pair_id
 
-    # load in the data 
+    # load in the data
     # os.chdir(PairDataDir)
     dat_id = np.loadtxt(PairDataDir + 'pair' + str(pair_id) + '.txt')
     dir_id = open(PairDataDir + 'pair' + str(pair_id) + '_des.txt',
