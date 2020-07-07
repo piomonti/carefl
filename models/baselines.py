@@ -2,6 +2,20 @@
 #
 #
 
+
+import numpy as np
+import scipy.optimize as sopt
+import torch
+import torch.nn as nn
+from scipy.special import expit as sigmoid
+from scipy.stats import kurtosis
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler, scale
+
+from .notears_helper import LocallyConnected, LBFGSBScipy
+
+
 # ------------------------------------------
 # LiNGAM Likelihood Ratios
 # ------------------------------------------
@@ -10,58 +24,53 @@
 #
 # Hyvarinen & Smith, JMLR, 2013
 
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import scale, MinMaxScaler
-from scipy.stats import kurtosis
-from sklearn.linear_model import LinearRegression
 
-def DiffEntropyHyv1998( x ):
+def DiffEntropyHyv1998(x):
     """
     approximate the differential entropy as described in Hyvarinen (1998)
     """
 
     # define constants
-    K1    = 79.047
-    K2    = 7.4129
+    K1 = 79.047
+    K2 = 7.4129
     gamma = .37457
 
-    diffE = -1 * K1 * ( np.log( np.cosh( x ) ).mean()  - gamma )**2
-    diffE -= K2 * ( x * np.exp( -0.5*x*x )).mean()**2
+    diffE = -1 * K1 * (np.log(np.cosh(x)).mean() - gamma) ** 2
+    diffE -= K2 * (x * np.exp(-0.5 * x * x)).mean() ** 2
+
+    return 1 * diffE
 
 
-    return 1*diffE
-
-def DiffEntropyKraskov2004( x ):
+def DiffEntropyKraskov2004(x):
     """
     approximate the differential entropy using equation (4) of Kraskov et al (2004)
 
     we note there are additive constants which we ignore as we are only interested in likelihood ratios !
     """
 
-    x = scale( x )
-    x = np.unique(x) # computing log of differences, hence need to remove repeated values (other computing log 0)
-    N = len( x )
+    x = scale(x)
+    x = np.unique(x)  # computing log of differences, hence need to remove repeated values (other computing log 0)
+    N = len(x)
 
-    x = np.sort( x )
+    x = np.sort(x)
 
-    return np.mean( np.log( N * np.diff( x ) ) )
+    return np.mean(np.log(N * np.diff(x)))
 
 
-def DiffEntropyWG1999( x, m=1 ):
+def DiffEntropyWG1999(x, m=1):
     """
     approximate the differential entropy using equation (3) of Wieczorkowski and Grzegorzewski (1999)
 
     """
 
-    x = scale( x )
+    x = scale(x)
     x = np.unique(x)
-    N = len( x )
+    N = len(x)
 
-    x = np.sort( x )
+    x = np.sort(x)
 
+    return (1. / (N - m)) * np.sum(np.log(((N + 1.) / m) * (x[m:] - x[:(len(x) - m)])))
 
-    return (1./(N-m)) * np.sum( np.log( ((N+1.)/m) * (x[m:] - x[:(len(x)-m)]) ))
 
 def cumulant_hyv13_ratio(x, y):
     """
@@ -78,7 +87,7 @@ def cumulant_hyv13_ratio(x, y):
     return R, predictCausalDir
 
 
-def base_entropy_ratio( x, y, entropy='Hyv98', normalize=True ):
+def base_entropy_ratio(x, y, entropy='Hyv98', normalize=True):
     """
     determine causal direction based on LR as described in Hyvarinen & Smith (2013)
     """
@@ -88,27 +97,27 @@ def base_entropy_ratio( x, y, entropy='Hyv98', normalize=True ):
     y = scale(y)
 
     # estimate correlation coef
-    rho = np.corrcoef(x,y)[0,1]
+    rho = np.corrcoef(x, y)[0, 1]
 
     assert entropy in ['Hyv98', 'Kraskov04', 'WG98']
 
     functionDict = {'Hyv98': DiffEntropyHyv1998,
-            'Kraskov04': DiffEntropyKraskov2004,
-            'WG98': DiffEntropyWG1999}
+                    'Kraskov04': DiffEntropyKraskov2004,
+                    'WG98': DiffEntropyWG1999}
 
-    entFunc = functionDict[ entropy ]
+    entFunc = functionDict[entropy]
 
     # compute LR of x->y
     resid = y - rho * x
     if normalize:
-        resid /= np.std( resid )
-    L_xy = -1* entFunc( x ) - entFunc( resid )
+        resid /= np.std(resid)
+    L_xy = -1 * entFunc(x) - entFunc(resid)
 
     # compute LR of x<-y
     resid = x - rho * y
     if normalize:
-        resid /= np.std( resid )
-    L_yx = -1* entFunc( y ) - entFunc( resid )
+        resid /= np.std(resid)
+    L_yx = -1 * entFunc(y) - entFunc(resid)
 
     LR = (L_xy - L_yx)
     predictCausalDir = 'x->y' if LR > 0 else 'y->x'
@@ -124,10 +133,6 @@ def base_entropy_ratio( x, y, entropy='Hyv98', normalize=True ):
 #
 # this code is taken from cdt toolbox as it was failing
 
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel, RBF
-from sklearn.preprocessing import scale
-import numpy as np
 
 def rbf_dot2(p1, p2, deg):
     if p1.ndim == 1:
@@ -163,7 +168,7 @@ def rbf_dot(X, deg):
     return H
 
 
-def FastHsicTestGamma(X, Y, sig=[-1, -1], maxpnt=500):
+def FastHsicTestGamma(X, Y, sig=np.array([-1, -1]), maxpnt=500):
     """This function implements the HSIC independence test using a Gamma approximation
      to the test threshold. Use at most maxpnt points to save time.
 
@@ -230,27 +235,6 @@ class ANM():
        Ref : Hoyer, Patrik O and Janzing, Dominik and Mooij, Joris M and Peters, Jonas and Schölkopf, Bernhard,
        "Nonlinear causal discovery with additive noise models", NIPS 2009
        https://papers.nips.cc/paper/3548-nonlinear-causal-discovery-with-additive-noise-models.pdf
-
-    Example:
-        >>> from cdt.causality.pairwise import ANM
-        >>> import networkx as nx
-        >>> import matplotlib.pyplot as plt
-        >>> from cdt.data import load_dataset
-        >>> data, labels = load_dataset('tuebingen')
-        >>> obj = ANM()
-        >>>
-        >>> # This example uses the predict() method
-        >>> output = obj.predict(data)
-        >>>
-        >>> # This example uses the orient_graph() method. The dataset used
-        >>> # can be loaded using the cdt.data module
-        >>> data, graph = load_dataset('sachs')
-        >>> output = obj.orient_graph(data, nx.DiGraph(graph))
-        >>>
-        >>> # To view the directed graph run the following command
-        >>> nx.draw_networkx(output, font_size=8)
-        >>> plt.show()
-
     """
 
     def __init__(self):
@@ -276,8 +260,8 @@ class ANM():
         """Compute the fitness score of the ANM model in the x->y direction.
 
         Args:
-            a (numpy.ndarray): Variable seen as cause
-            b (numpy.ndarray): Variable seen as effect
+            x (numpy.ndarray): Variable seen as cause
+            y (numpy.ndarray): Variable seen as effect
 
         Returns:
             float: ANM fit score
@@ -287,7 +271,6 @@ class ANM():
         indepscore = normalized_hsic(y_predict - y, x)
 
         return indepscore
-
 
 
 # ------------------------------------------
@@ -310,14 +293,14 @@ class RECI():
 
         Args:
              - data: np array, one column per variable
-			 - form: functional form, either linear of GP
+        - form: functional form, either linear of GP
 
         Returns:
             float: Causation score (Value : 1 if a->b and -1 if b->a)
         """
 
-        x = data[:,0]
-        y = data[:,1]
+        x = data[:, 0]
+        y = data[:, 1]
         if scale_input:
             x = scale(x).reshape((-1, 1))
             y = scale(y).reshape((-1, 1))
@@ -326,7 +309,7 @@ class RECI():
             x = MinMaxScaler().fit_transform(x.reshape((-1, 1)))
             y = MinMaxScaler().fit_transform(y.reshape((-1, 1)))
 
-        return self.compute_residual(x,y, form=form, d=d) - self.compute_residual(y,x, form=form, d=d)
+        return self.compute_residual(x, y, form=form, d=d) - self.compute_residual(y, x, form=form, d=d)
 
     def compute_residual(self, x, y, form='linear', d=3):
         """Compute the fitness score of the ANM model in the x->y direction.
@@ -341,28 +324,28 @@ class RECI():
 
         assert form in ['linear', 'GP', 'poly']
 
-        x = x.reshape((-1,1))
-        y = y.reshape((-1,1))
+        x = x.reshape((-1, 1))
+        y = y.reshape((-1, 1))
 
-        if form=='linear':
+        if form == 'linear':
             # use linear regression
-            res = LinearRegression().fit( x, y )
+            res = LinearRegression().fit(x, y)
             residuals = y - res.predict(x)
-            return np.median( residuals**2 )
-        elif form=='poly':
-            features = np.hstack( [x**i for i in range(1, d)])
-            res = LinearRegression().fit( features, y )
-            residuals = y - res.predict( features )
-            return np.median( residuals**2 )
-       	else:
+            return np.median(residuals ** 2)
+        elif form == 'poly':
+            features = np.hstack([x ** i for i in range(1, d)])
+            res = LinearRegression().fit(features, y)
+            residuals = y - res.predict(features)
+            return np.median(residuals ** 2)
+        else:
             # use Gaussian process regssion
-            #kernel = 1.0 * RBF() #+ WhiteKernel()
+            # kernel = 1.0 * RBF() #+ WhiteKernel()
             x = scale(x)
             y = scale(y)
-            gp = GaussianProcessRegressor( ).fit(x, y)
+            gp = GaussianProcessRegressor().fit(x, y)
             residuals = y - gp.predict(x)
-            return np.mean( residuals**2 )
-        
+            return np.mean(residuals ** 2)
+
 
 # ------------------------------------------
 # NOTEARS (linear)
@@ -372,11 +355,6 @@ class RECI():
 # code shamelessly taken from: 
 # https://github.com/xunzheng/notears
 #
-
-import numpy as np
-import scipy.linalg as slin
-import scipy.optimize as sopt
-from scipy.special import expit as sigmoid
 
 
 def linear_notears_dir(x, y, lambda1, loss_type, max_iter=100, h_tol=1e-8, rho_max=1e+16, w_threshold=0.3):
@@ -389,7 +367,8 @@ def linear_notears_dir(x, y, lambda1, loss_type, max_iter=100, h_tol=1e-8, rho_m
     Solve min_W L(W; X) + lambda1 ‖W‖_1 s.t. h(W) = 0 using augmented Lagrangian.
 
     Args:
-        X (np.ndarray): [n, d] sample matrix
+        x (numpy.ndarray): Variable seen as cause
+        y (numpy.ndarray): Variable seen as effect
         lambda1 (float): l1 penalty parameter
         loss_type (str): l2, logistic, poisson
         max_iter (int): max num of dual ascent steps
@@ -402,7 +381,7 @@ def linear_notears_dir(x, y, lambda1, loss_type, max_iter=100, h_tol=1e-8, rho_m
     """
 
     # stack observations together
-    X = np.vstack( (x,y) ).T 
+    X = np.vstack((x, y)).T
 
     def _loss(W):
         """Evaluate value and gradient of loss."""
@@ -467,10 +446,10 @@ def linear_notears_dir(x, y, lambda1, loss_type, max_iter=100, h_tol=1e-8, rho_m
     W_est[np.abs(W_est) < w_threshold] = 0
 
     # get measure of causal direction
-    R = np.abs( W_est[1,0] ) - np.abs( W_est[0,1 ]) 
+    R = np.abs(W_est[1, 0]) - np.abs(W_est[0, 1])
     predictCausalDir = 'x->y' if R < 0 else 'y->x'
 
-    return R, predictCausalDir, W_est 
+    return R, predictCausalDir, W_est
 
 
 # ------------------------------------------
@@ -482,16 +461,6 @@ def linear_notears_dir(x, y, lambda1, loss_type, max_iter=100, h_tol=1e-8, rho_m
 # https://github.com/xunzheng/notears
 #
 
-#from notears.locally_connected import LocallyConnected
-#from notears.lbfgsb_scipy import LBFGSBScipy
-import torch
-import torch.nn as nn
-import numpy as np
-import math
-
-
-
-from .notears_helper import LocallyConnected, LBFGSBScipy
 
 class NotearsMLP(nn.Module):
     def __init__(self, dims, bias=True):
@@ -570,6 +539,7 @@ class NotearsMLP(nn.Module):
         W = W.cpu().detach().numpy()  # [i, j]
         return W
 
+
 def squared_loss(output, target):
     n = target.shape[0]
     loss = 0.5 / n * torch.sum((output - target) ** 2)
@@ -593,6 +563,7 @@ def dual_ascent_step(model, X, lambda1, lambda2, rho, alpha, h, rho_max):
             primal_obj = loss + penalty + l2_reg + l1_reg
             primal_obj.backward()
             return primal_obj
+
         optimizer.step(closure)  # NOTE: updates model in-place
         with torch.no_grad():
             h_new = model.h_func().item()
@@ -623,8 +594,8 @@ def notears_nonlinear(model: nn.Module,
     return W_est
 
 
-def nonlinear_notears_dir( dat ):
+def nonlinear_notears_dir(X):
     """"""
     model = NotearsMLP(dims=[2, 2, 1], bias=True)
     W_est = notears_nonlinear(model, X, lambda1=0.01, lambda2=0.01)
-    return W_est 
+    return W_est

@@ -4,6 +4,7 @@
 #
 
 import argparse
+import os
 
 from runners.cause_effect_pairs_runner import RunCauseEffectPairs
 from runners.simulation_runner import RunSimulations
@@ -11,8 +12,9 @@ from runners.simulation_runner import RunSimulations
 
 def parse_input():
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--dataset', type=str, default='linear',
-                        help='Dataset to run synthetic experiments on. Should be either linear, hoyer2009 or nueralnet_l1 or all to run all')
+    parser.add_argument('--dataset', type=str, default='all',
+                        help='Dataset to run synthetic experiments on. Should be either linear, '
+                             'hoyer2009 or nueralnet_l1 or all to run all')
     parser.add_argument('--nSims', type=int, default=25, help='Number of simulations to run')
     parser.add_argument('--resultsDir', type=str, default='results/', help='Path for saving results.')
 
@@ -23,22 +25,30 @@ def parse_input():
 
 
 if __name__ == '__main__':
+    # parse command line arguments
     args = parse_input()
 
-    if (args.dataset in ['all', 'linear', 'hoyer2009', 'nueralnet_l1']) & (not args.runCEP):
-        print('Running {} synthetic experiments. Will run {} simulations'.format(args.dataset, args.nSims))
+    # create results directory
+    os.makedirs(args.resultsDir, exist_ok=True)
 
+    if args.dataset in ['all', 'linear', 'hoyer2009', 'nueralnet_l1'] and not args.runCEP:
+        # run proposed method as well as baseline methods on simulated data
+        # and save the results as pickle files which can be used later to plot Fig 1.
+        print('Running {} synthetic experiments. Will run {} simulations'.format(args.dataset, args.nSims))
+        algos = ['FlowCD', 'LRHyv', 'notears', 'RECI', 'ANM']
+        # chose the form of f (equation 11)
         if args.dataset == 'all':
             exp_list = ['linear', 'hoyer2009', 'nueralnet_l1']
         else:
             exp_list = [args.dataset]
+
+        import pickle
 
         for exp in exp_list:
             nvals = [25, 50, 75, 100, 150, 250, 500]
             results = []
             causal_mechanism = exp
             nsims = args.nSims
-            algos = ['FlowCD', 'LRHyv', 'notears', 'RECI', 'ANM']
             print('Mechanism: {}'.format(causal_mechanism))
             for n in nvals:
                 print('### {} ###'.format(n))
@@ -46,14 +56,12 @@ if __name__ == '__main__':
                     RunSimulations(nSims=nsims, nPoints=n, causal_mechanism=causal_mechanism, algolist=algos))
 
             # save results
-            import pickle
-
             pickle.dump(results, open(args.resultsDir + causal_mechanism + "_results.p", 'wb'))
 
-    if (args.plot) & (not args.runCEP):
+    if args.plot and not args.runCEP:
         # produce a plot of synthetic results
         import seaborn as sns
-        import pylab as plt
+        import matplotlib.pyplot as plt
         import pickle
         import numpy as np
 
@@ -114,8 +122,12 @@ if __name__ == '__main__':
 
         plt.tight_layout()
         plt.subplots_adjust(right=0.87)
-        plt.savefig('CausalDiscSims.pdf', dpi=300)
+        plt.savefig(os.path.join(args.resultsDir, 'CausalDiscSims.pdf'), dpi=300)
 
     if args.runCEP:
+        # Run proposed method on CauseEffectPair dataset
+        # Percentage of correct causal direction is printed to standard output,
+        # and updated online after each new pair.
+        # The values for baseline methods were taken from their respective papers.
         print('running cause effect pairs experiments ')
         RunCauseEffectPairs()

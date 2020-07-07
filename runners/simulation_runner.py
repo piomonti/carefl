@@ -2,14 +2,15 @@
 #
 #
 #
+import numpy as np
+import pandas as pd
 
-# load flows
-from CauseEffectPairs.Run_CEP_01 import *
 # load data generating code:
 from data.generate_synth_data import gen_synth_causal_dat
+# load flows
+from models.bivariateFlowCD import BivariateFlowCD
 # load baselines
 from models.baselines import base_entropy_ratio, linear_notears_dir, ANM, RECI
-from models.bivariateFlowCD import BivariateFlowCD
 
 
 def laplace_noise(points):
@@ -18,17 +19,19 @@ def laplace_noise(points):
 
 
 # define function to run simulations
-def RunSimulations(nSims=25, nPoints=100, causal_mechanism='linear',
-                   algolist=['FlowCD', 'notears', 'LRHyv', 'ANM', 'RECI']):
+def RunSimulations(nSims=25, nPoints=100, causal_mechanism='linear', algolist=None):
     """
     run simulations. We use the generator from cdt module
 
     INPUT:
-    	- nSims: number of simulations to run
-    	- nPoints: number of observations of bivariate data
-    	- causal_mechanism: determine causal associations between bivariate data
-
+        - nSims: number of simulations to run
+        - nPoints: number of observations of bivariate data
+        - causal_mechanism: determine causal associations between bivariate data
+        - algolist: causal discovery methods to run
     """
+
+    if algolist is None:
+        algolist = ['FlowCD', 'notears', 'LRHyv', 'ANM', 'RECI']
 
     # nSims = 10
     # nPoints = 100
@@ -39,7 +42,7 @@ def RunSimulations(nSims=25, nPoints=100, causal_mechanism='linear',
     results = pd.DataFrame({x: ['NA'] * nSims for x in algolist})
 
     # generate data:
-    # gen = CausalPairGenerator( causal_mechanism=causal_mechanism, noise=laplace_noise, noise_coeff=.2) #, noise='uniform' )
+    # gen = CausalPairGenerator( causal_mechanism=causal_mechanism, noise=laplace_noise, noise_coeff=.2)
     # np.random.seed(0) # doesnt quite make things reproducible ..
     # data, labels = gen.generate( nSims, npoints=nPoints)
 
@@ -75,7 +78,7 @@ def RunSimulations(nSims=25, nPoints=100, causal_mechanism='linear',
                 # mod.train( np.vstack(( data.A.iloc[0], data.B.iloc[0])).T )[1]
             if a == 'notears':
                 results.loc[sim, a] = \
-                linear_notears_dir(x=dat[:, 0], y=dat[:, 1], lambda1=.01, loss_type='l2', w_threshold=0)[1]
+                    linear_notears_dir(x=dat[:, 0], y=dat[:, 1], lambda1=.01, loss_type='l2', w_threshold=0)[1]
 
     # summarize results
     for a in algolist:

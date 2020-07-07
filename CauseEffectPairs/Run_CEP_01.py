@@ -6,8 +6,6 @@
 #
 #
 
-import os
-
 import numpy as np
 import pandas as pd
 import torch
@@ -123,7 +121,7 @@ def runCEPair(pair_id, Nlayers, Nhidden, priorDist='laplace', TrainSplit=1., epo
                 prior_rev = Laplace(torch.zeros(Ncomp), torch.ones(
                     Ncomp))
                 # TransformedDistribution(Laplace(torch.zeros( Ncomp ), torch.ones( Ncomp )), SigmoidTransform().inv)
-                # MultivariateNormal(loc=np.zeros((Ncomp,)), covariance_matrix = np.eye( Ncomp )).inv )  # SigmoidTransform().inv)
+                # MultivariateNormal(loc=np.zeros((Ncomp,)), covariance_matrix = np.eye( Ncomp )).inv)  # SigmoidTransform().inv)
             else:
                 print('.')
                 prior_rev = TransformedDistribution(Uniform(torch.zeros(Ncomp), torch.ones(Ncomp)),
@@ -140,8 +138,10 @@ def runCEPair(pair_id, Nlayers, Nhidden, priorDist='laplace', TrainSplit=1., epo
             # print(np.nanmean( flow_mod_cond_rev.EvalLL( dat_pca[:,[1,0]], to_one_hot(label)[0] ) ))
 
             # store results
-            # results.loc[ (results.L==l) & (results.nh==nh), 'x->y' ] = np.nanmean( flow_mod_cond.EvalLL( testDat_id, to_one_hot(label[ : testDat_id.shape[0]])[0] ) )
-            # results.loc[ (results.L==l) & (results.nh==nh), 'y->x' ] = np.nanmean( flow_mod_cond_rev.EvalLL( testDat_id[:,[1,0]], to_one_hot(label[ : testDat_id.shape[0]])[0] ) )
+            # results.loc[(results.L == l) & (results.nh == nh), 'x->y'] = np.nanmean(
+            #     flow_mod_cond.EvalLL(testDat_id, to_one_hot(label[: testDat_id.shape[0]])[0]))
+            # results.loc[(results.L == l) & (results.nh == nh), 'y->x'] = np.nanmean(
+            #     flow_mod_cond_rev.EvalLL(testDat_id[:, [1, 0]], to_one_hot(label[: testDat_id.shape[0]])[0]))
             results.loc[(results.L == l) & (results.nh == nh), 'x->y'] = np.nanmean(flow_mod_cond.EvalLL(testDat_id))
             results.loc[(results.L == l) & (results.nh == nh), 'y->x'] = np.nanmean(
                 flow_mod_cond_rev.EvalLL(testDat_id[:, [1, 0]]))
