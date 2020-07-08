@@ -7,24 +7,23 @@ import argparse
 import os
 
 from runners.cause_effect_pairs_runner import RunCauseEffectPairs
+from runners.counterfactual_trials import counterfactuals
 from runners.intervention_trials import intervention
 from runners.simulation_runner import RunSimulations
-from runners.counterfactual_trials import counterfactuals
 
 
 def parse_input():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--dataset', type=str, default='all',
-                        help='Dataset to run synthetic experiments on. Should be either linear, '
+                        help='Dataset to run synthetic CD experiments on. Should be either linear, '
                              'hoyer2009 or nueralnet_l1 or all to run all')
-    parser.add_argument('--nSims', type=int, default=25, help='Number of simulations to run')
+    parser.add_argument('--nSims', type=int, default=250, help='Number of synthetic simulations to run')
     parser.add_argument('--resultsDir', type=str, default='results/', help='Path for saving results.')
 
-    parser.add_argument('-p', '--plot', action='store_true', help='Should we plot results')
-    parser.add_argument('--runCEP', action='store_true', help='Run Cause Effect Pairs experiments')
-
+    parser.add_argument('-s', '--simulation', action='store_true', help='run the CD exp on synthetic data')
+    parser.add_argument('-p', '--pairs', action='store_true', help='Run Cause Effect Pairs experiments')
     parser.add_argument('-i', '--intervention', action='store_true', help='run intervention exp on toy example')
-    parser.add_argument('-c', '--counterfactuals', action='store_true', help='run counterfactuals exp on toy example')
+    parser.add_argument('-c', '--counterfactual', action='store_true', help='run counterfactual exp on toy example')
 
     return parser.parse_args()
 
@@ -36,19 +35,24 @@ if __name__ == '__main__':
     # create results directory
     os.makedirs(args.resultsDir, exist_ok=True)
 
-    if args.dataset in ['all', 'linear', 'hoyer2009',
-                        'nueralnet_l1'] and not args.runCEP and not args.intervention and not args.counterfactuals:
+    if args.simulation:
         # run proposed method as well as baseline methods on simulated data
         # and save the results as pickle files which can be used later to plot Fig 1.
+        import pickle
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+        import numpy as np
+
         print('Running {} synthetic experiments. Will run {} simulations'.format(args.dataset, args.nSims))
         algos = ['FlowCD', 'LRHyv', 'notears', 'RECI', 'ANM']
+
         # chose the form of f (equation 11)
         if args.dataset == 'all':
             exp_list = ['linear', 'hoyer2009', 'nueralnet_l1']
-        else:
+        elif args.dataset in ['linear', 'hoyer2009', 'nueralnet_l1']:
             exp_list = [args.dataset]
-
-        import pickle
+        else:
+            raise ValueError('Unknown dataset: {}'.format(args.dataset))
 
         for exp in exp_list:
             nvals = [25, 50, 75, 100, 150, 250, 500]
@@ -64,12 +68,8 @@ if __name__ == '__main__':
             # save results
             pickle.dump(results, open(args.resultsDir + causal_mechanism + "_results.p", 'wb'))
 
-    if args.plot and not args.runCEP and not args.intervention and not args.counterfactuals:
+        # if args.plot and not args.pairs and not args.intervention and not args.counterfactuals:
         # produce a plot of synthetic results
-        import seaborn as sns
-        import matplotlib.pyplot as plt
-        import pickle
-        import numpy as np
 
         title_dic = {'nueralnet_l1': "Neural network" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + n_2 \right)$",
                      'linear': "Linear SEM\n" + r"$x_2 = x_1 + n_2 $",
@@ -130,7 +130,7 @@ if __name__ == '__main__':
         plt.subplots_adjust(right=0.87)
         plt.savefig(os.path.join(args.resultsDir, 'CausalDiscSims.pdf'), dpi=300)
 
-    if args.runCEP:
+    if args.pairs:
         # Run proposed method on CauseEffectPair dataset
         # Percentage of correct causal direction is printed to standard output,
         # and updated online after each new pair.
@@ -139,7 +139,11 @@ if __name__ == '__main__':
         RunCauseEffectPairs()
 
     if args.intervention:
+        # Run proposed method to perform interventions on the toy example described in the manuscript
+        print('running interventions on toy example')
         intervention(dim=4, resultsDir=args.resultsDir)
 
-    if args.counterfactuals:
+    if args.counterfactual:
+        # Run proposed method to perform counterfactuals on the toy example described in the manuscript
+        print('running counterfactuals on toy example')
         counterfactuals(resultsDir=args.resultsDir)
