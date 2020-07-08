@@ -194,7 +194,7 @@ class BivariateFlowCD:
             assert np.abs(x0val - x1Intervention[0, 0]) < 1e-5
             return x1Intervention[:, 1], self.flow.backwardPassFlow(latentExp)[0, 1]
         elif dataDim == 4:
-            print('intervention for high (4) D case')
+            # print('intervention for high (4) D case')
             # we are in the 4D case. Assume [x0,x1] are causes of [x2,x3]
             # the interventionIndex variable tells us which cause we intervene over (either 0th or 1st entry)
 

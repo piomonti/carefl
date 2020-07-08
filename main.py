@@ -7,6 +7,7 @@ import argparse
 import os
 
 from runners.cause_effect_pairs_runner import RunCauseEffectPairs
+from runners.intervention_trials import intervention
 from runners.simulation_runner import RunSimulations
 
 
@@ -18,8 +19,10 @@ def parse_input():
     parser.add_argument('--nSims', type=int, default=25, help='Number of simulations to run')
     parser.add_argument('--resultsDir', type=str, default='results/', help='Path for saving results.')
 
-    parser.add_argument('--plot', action='store_true', help='Should we plot results')
+    parser.add_argument('-p', '--plot', action='store_true', help='Should we plot results')
     parser.add_argument('--runCEP', action='store_true', help='Run Cause Effect Pairs experiments')
+
+    parser.add_argument('-i', '--intervention', action='store_true', help='')
 
     return parser.parse_args()
 
@@ -31,7 +34,7 @@ if __name__ == '__main__':
     # create results directory
     os.makedirs(args.resultsDir, exist_ok=True)
 
-    if args.dataset in ['all', 'linear', 'hoyer2009', 'nueralnet_l1'] and not args.runCEP:
+    if args.dataset in ['all', 'linear', 'hoyer2009', 'nueralnet_l1'] and not args.runCEP and not args.intervention:
         # run proposed method as well as baseline methods on simulated data
         # and save the results as pickle files which can be used later to plot Fig 1.
         print('Running {} synthetic experiments. Will run {} simulations'.format(args.dataset, args.nSims))
@@ -58,7 +61,7 @@ if __name__ == '__main__':
             # save results
             pickle.dump(results, open(args.resultsDir + causal_mechanism + "_results.p", 'wb'))
 
-    if args.plot and not args.runCEP:
+    if args.plot and not args.runCEP and not args.intervention:
         # produce a plot of synthetic results
         import seaborn as sns
         import matplotlib.pyplot as plt
@@ -131,3 +134,6 @@ if __name__ == '__main__':
         # The values for baseline methods were taken from their respective papers.
         print('running cause effect pairs experiments ')
         RunCauseEffectPairs()
+
+    if args.intervention:
+        intervention(dim=4, resultsDir=args.resultsDir)
