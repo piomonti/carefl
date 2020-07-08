@@ -9,6 +9,7 @@ import os
 from runners.cause_effect_pairs_runner import RunCauseEffectPairs
 from runners.intervention_trials import intervention
 from runners.simulation_runner import RunSimulations
+from runners.counterfactual_trials import counterfactuals
 
 
 def parse_input():
@@ -22,7 +23,8 @@ def parse_input():
     parser.add_argument('-p', '--plot', action='store_true', help='Should we plot results')
     parser.add_argument('--runCEP', action='store_true', help='Run Cause Effect Pairs experiments')
 
-    parser.add_argument('-i', '--intervention', action='store_true', help='')
+    parser.add_argument('-i', '--intervention', action='store_true', help='run intervention exp on toy example')
+    parser.add_argument('-c', '--counterfactuals', action='store_true', help='run counterfactuals exp on toy example')
 
     return parser.parse_args()
 
@@ -34,7 +36,8 @@ if __name__ == '__main__':
     # create results directory
     os.makedirs(args.resultsDir, exist_ok=True)
 
-    if args.dataset in ['all', 'linear', 'hoyer2009', 'nueralnet_l1'] and not args.runCEP and not args.intervention:
+    if args.dataset in ['all', 'linear', 'hoyer2009',
+                        'nueralnet_l1'] and not args.runCEP and not args.intervention and not args.counterfactuals:
         # run proposed method as well as baseline methods on simulated data
         # and save the results as pickle files which can be used later to plot Fig 1.
         print('Running {} synthetic experiments. Will run {} simulations'.format(args.dataset, args.nSims))
@@ -61,7 +64,7 @@ if __name__ == '__main__':
             # save results
             pickle.dump(results, open(args.resultsDir + causal_mechanism + "_results.p", 'wb'))
 
-    if args.plot and not args.runCEP and not args.intervention:
+    if args.plot and not args.runCEP and not args.intervention and not args.counterfactuals:
         # produce a plot of synthetic results
         import seaborn as sns
         import matplotlib.pyplot as plt
@@ -137,3 +140,6 @@ if __name__ == '__main__':
 
     if args.intervention:
         intervention(dim=4, resultsDir=args.resultsDir)
+
+    if args.counterfactuals:
+        counterfactuals(resultsDir=args.resultsDir)
