@@ -20,7 +20,7 @@ optional arguments:
   --resultsDir RESULTSDIR
                         Path for saving results.
   -s, --simulation      run the CD exp on synthetic data
-  -p, --pairs           Run Cause Effect Pairs experiments
+  -p, --pairs           run Cause Effect Pairs experiments
   -i, --intervention    run intervention exp on toy example
   -c, --counterfactual  run counterfactual exp on toy example
 ```
@@ -65,4 +65,6 @@ This project was tested with the following versions:
 - scipy 1.4.1
 - matplotlib 3.2.1
 - seaborn 0.10
+
+This project uses normalizing flows implementations from [this](https://github.com/karpathy/pytorch-normalizing-flows) library. 
 
