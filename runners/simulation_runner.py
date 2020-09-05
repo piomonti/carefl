@@ -9,8 +9,7 @@ import pandas as pd
 from data.generate_synth_data import gen_synth_causal_dat
 # load flows
 from models.bivariateFlowCD import BivariateFlowCD
-# load baselines
-from models.baselines import base_entropy_ratio, linear_notears_dir, ANM, RECI
+from models import RECI, ANM, linear_notears_dir, base_entropy_ratio
 
 
 def laplace_noise(points):
