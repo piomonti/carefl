@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from data.custom_synth_class import CustomSyntheticDatasetDensity, CustomSyntheticDatasetDensityClasses
+from data.generate_synth_data import CustomSyntheticDatasetDensity, CustomSyntheticDatasetDensityClasses
 # load flows
 from nflib.flows import NormalizingFlowModel  # , ClassCondNormalizingFlowModel
 
