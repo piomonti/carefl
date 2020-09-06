@@ -435,6 +435,10 @@ class NormalizingFlowModel(nn.Module):
         xs, _ = self.flow.backward(z)
         return xs
 
+    def log_likelihood(self, x):
+        _, prior_logprob, log_det = self.forward(x)
+        return (prior_logprob + log_det).cpu().detach().numpy()
+
 # class ClassCondNormalizingFlowModel(nn.Module):
 #     """
 

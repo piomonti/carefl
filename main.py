@@ -141,9 +141,9 @@ if __name__ == '__main__':
     if args.intervention:
         # Run proposed method to perform interventions on the toy example described in the manuscript
         print('running interventions on toy example')
-        intervention(dim=4, resultsDir=args.resultsDir)
+        intervention(dim=4, results_dir=args.resultsDir)
 
     if args.counterfactual:
         # Run proposed method to perform counterfactuals on the toy example described in the manuscript
         print('running counterfactuals on toy example')
-        counterfactuals(resultsDir=args.resultsDir)
+        counterfactuals(results_dir=args.resultsDir)

@@ -1,4 +1,4 @@
-### trial interventional predictions of flow models
+# trial interventional predictions of flow models
 #
 #
 
@@ -11,10 +11,10 @@ import seaborn as sns
 # load data generating code:
 from data.generate_synth_data import gen_synth_causal_dat
 # load flows
-from models.bivariateFlowCD import BivariateFlowCD
+from models.affine_flow_cd import BivariateFlowLR
 
 
-def intervention(dim=4, resultsDir=''):
+def intervention(dim=4, results_dir=''):
     if dim == 2:
         # generate toy data:
         np.random.seed(0)
@@ -25,12 +25,11 @@ def intervention(dim=4, resultsDir=''):
         dat[:, 0] /= vars_[0]
         dat[:, 1] /= vars_[1]
 
-        trueMod = lambda x: (x + (.5) * x * x * x) / vars_[1]
+        true_mod = lambda x: (x + (.5) * x * x * x) / vars_[1]
 
         # define and fit flow model:
-        mod = BivariateFlowCD(Nlayers=[3], Nhidden=[2], priorDist='laplace', epochs=500, optMethod='scheduling')
-
-        mod.FitFlowSEM(dat=dat, Nlayers=5, Nhidden=10)
+        mod = BivariateFlowLR(n_layers=None, n_hidden=None, prior_dist='laplace', epochs=500, opt_method='scheduling')
+        mod.fit_to_sem(dat, n_layers=5, n_hidden=10)
 
         # plot data distribution:
         plt.scatter(dat[:, 0], dat[:, 1])
@@ -38,10 +37,10 @@ def intervention(dim=4, resultsDir=''):
         plt.ylabel('effect')
 
         xvals = np.arange(-5, 5, .1)
-        plt.plot(xvals, trueMod(xvals), color='red', linewidth=3, linestyle=':')
-        plt.plot(xvals, np.array([mod.predictIntervention(x0val=x, nSamples=500)[1] for x in xvals]), color='green',
+        plt.plot(xvals, true_mod(xvals), color='red', linewidth=3, linestyle=':')
+        plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=500)[1] for x in xvals]), color='green',
                  linewidth=3, linestyle='-.')
-        plt.savefig(os.path.join(resultsDir, 'intervention_2d.pdf'), dpi=300)
+        plt.savefig(os.path.join(results_dir, 'intervention_2d.pdf'), dpi=300)
 
         # plt.figure()
         # x0val = 1.5
@@ -57,7 +56,7 @@ def intervention(dim=4, resultsDir=''):
         # print(mod.invertFlow( input_ ))
 
     elif dim == 4:
-        #### higher D examples
+        # higher D examples
         #
         #
         # generate some 4D data according to the following SEM
@@ -68,16 +67,16 @@ def intervention(dim=4, resultsDir=''):
         # X_3 = X_0^2 - X_1 + N_3
         #
 
-        nObs = 2500
+        n_obs = 2500
         np.random.seed(0)
 
         # causes
-        X_0 = np.random.laplace(0, 1 / np.sqrt(2), size=nObs)
-        X_1 = np.random.laplace(0, 1 / np.sqrt(2), size=nObs)
+        X_0 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        X_1 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
 
         # effects
-        X_2 = X_0 + 0.5 * (X_1 * X_1 * X_1) + np.random.laplace(0, 1 / np.sqrt(2), size=nObs)
-        X_3 = -X_1 + 0.5 * (X_0 * X_0) + np.random.laplace(0, 1 / np.sqrt(2), size=nObs)
+        X_2 = X_0 + 0.5 * (X_1 * X_1 * X_1) + np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        X_3 = -X_1 + 0.5 * (X_0 * X_0) + np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
 
         # X_2 /= X_2.std()
         # X_3 /= X_3.std()
@@ -88,8 +87,8 @@ def intervention(dim=4, resultsDir=''):
         plt.scatter(dat[:, 1], dat[:, 2])
         plt.scatter(dat[:, 0], dat[:, 3])
 
-        mod = BivariateFlowCD(Nlayers=[3], Nhidden=[2], priorDist='laplace', epochs=500, optMethod='scheduling')
-        mod.FitFlowSEM(dat=dat, Nlayers=5, Nhidden=10)
+        mod = BivariateFlowLR(n_layers=None, n_hidden=None, prior_dist='laplace', epochs=500, opt_method='scheduling')
+        mod.fit_to_sem(dat, n_layers=5, n_hidden=10)
 
         # -----
 
@@ -104,11 +103,11 @@ def intervention(dim=4, resultsDir=''):
         plt.plot(xvals, xvals, label='True', color=sns.color_palette("muted", 8)[2], linewidth=2, alpha=.8)
         plt.plot(xvals, .5 * xvals * xvals, color=sns.color_palette("muted", 8)[2], linewidth=2, alpha=.8)
 
-        plt.plot(xvals, np.array([mod.predictIntervention(x0val=x, nSamples=10, dataDim=4)[0, 2] for x in xvals]),
+        plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=10, d=4)[0, 2] for x in xvals]),
                  linewidth=3, linestyle='-.',
                  label=r'Predicted $\mathbb{E} [X_3| do(X_1=\alpha)]$')  # remove 0 indexing in legend
         # and distribution of X_3 | do(X_0=x) should be quadratic
-        plt.plot(xvals, np.array([mod.predictIntervention(x0val=x, nSamples=10, dataDim=4)[0, 3] for x in xvals]),
+        plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=10, d=4)[0, 3] for x in xvals]),
                  linewidth=3, linestyle='-.',
                  label=r'Predicted $\mathbb{E} [X_4| do(X_1=\alpha)]$')  # remove 0 indexing in legend
 
@@ -116,7 +115,7 @@ def intervention(dim=4, resultsDir=''):
         plt.xlabel(r'Value of interventional variable, $X_1=\alpha$', fontsize=12)
         plt.ylabel(r'Predicted value of $X_3$ or $X_4$', fontsize=12)
         plt.title(r'interventional predictions under $do(X_1=\alpha)$', fontsize=15)
-        plt.savefig(os.path.join(resultsDir, 'intervention_4d_1.pdf'), dpi=300)
+        plt.savefig(os.path.join(results_dir, 'intervention_4d_1.pdf'), dpi=300)
 
         # -----
 
@@ -125,7 +124,7 @@ def intervention(dim=4, resultsDir=''):
         fig.suptitle(r'Interventional predictions under $do(X_1=\alpha)$', fontsize=18)
 
         ax1.plot(xvals, xvals, label=r'True $\mathbb{E} [X_3| do(X_1=\alpha)]$', linewidth=3, linestyle=':')
-        ax1.plot(xvals, np.array([mod.predictIntervention(x0val=x, nSamples=10, dataDim=4)[0, 2] for x in xvals]),
+        ax1.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=10, d=4)[0, 2] for x in xvals]),
                  linewidth=3, linestyle='-.', label=r'Predicted $\mathbb{E} [X_3| do(X_1=\alpha)]$',
                  alpha=.8)  # remove 0 indexing in legend
 
@@ -135,7 +134,7 @@ def intervention(dim=4, resultsDir=''):
 
         ax2.plot(xvals, .5 * xvals * xvals, label=r'True $\mathbb{E} [X_4| do(X_1=\alpha)]$', linewidth=3,
                  linestyle=':')
-        ax2.plot(xvals, np.array([mod.predictIntervention(x0val=x, nSamples=10, dataDim=4)[0, 3] for x in xvals]),
+        ax2.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=10, d=4)[0, 3] for x in xvals]),
                  linewidth=3, linestyle='-.', label=r'Predicted $\mathbb{E} [X_4| do(X_1=\alpha)]$',
                  alpha=.8)  # remove 0 indexing in legend
 
@@ -145,7 +144,7 @@ def intervention(dim=4, resultsDir=''):
 
         plt.tight_layout()
         plt.subplots_adjust(top=0.95)
-        plt.savefig(os.path.join(resultsDir, 'intervention_4d_2.pdf'), dpi=300)
+        plt.savefig(os.path.join(results_dir, 'intervention_4d_2.pdf'), dpi=300)
 
         # -----
 
@@ -153,38 +152,38 @@ def intervention(dim=4, resultsDir=''):
         # and the distribution of X_2 | do(X_1=x) should be quadratic
         plt.plot(xvals,
                  np.array(
-                     [mod.predictIntervention(x0val=x, nSamples=10, dataDim=4, interventionIndex=1)[0, 2] for x in
+                     [mod.predict_intervention(x0_val=x, n_samples=10, d=4, intervention_index=1)[0, 2] for x in
                       xvals]),
                  linewidth=3, linestyle='-.', label=r'$X_2| do(X_1=x)$')
         # and distribution of X_3 | do(X_0=x) should be quadratic
         plt.plot(xvals,
                  np.array(
-                     [mod.predictIntervention(x0val=x, nSamples=10, dataDim=4, interventionIndex=1)[0, 3] for x in
+                     [mod.predict_intervention(x0_val=x, n_samples=10, d=4, intervention_index=1)[0, 3] for x in
                       xvals]),
                  linewidth=3, linestyle='-.', label=r'$X_3| do(X_1=x)$')
         plt.legend()
-        plt.savefig(os.path.join(resultsDir, 'intervention_4d_3.pdf'), dpi=300)
+        plt.savefig(os.path.join(results_dir, 'intervention_4d_3.pdf'), dpi=300)
 
         # -----
 
         plt.figure()
         plt.scatter(dat[:, 0], dat[:, 3])
-        plt.plot(xvals, np.array([mod.predictIntervention(x0val=x, nSamples=10, dataDim=4)[0, 3] for x in xvals]),
+        plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=10, d=4)[0, 3] for x in xvals]),
                  linewidth=3, linestyle='-.', label=r'$X_3| do(X_0=x)$', color='red')
         plt.legend()
-        plt.savefig(os.path.join(resultsDir, 'intervention_4d_4.pdf'), dpi=300)
+        plt.savefig(os.path.join(results_dir, 'intervention_4d_4.pdf'), dpi=300)
 
         # below are checks to ensure flow is autoregressive
         # input_ = np.ones((1,4))
-        # print(mod.invertFlow( input_ ))
+        # print(mod.invert_flow( input_ ))
         # input_[0,0] = 2
-        # print(mod.invertFlow( input_ ))
+        # print(mod.invert_flow( input_ ))
         # input_[0,1] = 2
-        # print(mod.invertFlow( input_ ))
+        # print(mod.invert_flow( input_ ))
         # input_[0,2] = 2
-        # print(mod.invertFlow( input_ ))
+        # print(mod.invert_flow( input_ ))
         # input_[0,3] = 2
-        # print(mod.invertFlow( input_ ))
+        # print(mod.invert_flow( input_ ))
 
     else:
         raise NotImplementedError('value of dim {}'.format(dim))

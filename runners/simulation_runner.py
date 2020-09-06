@@ -8,8 +8,7 @@ import pandas as pd
 # load data generating code:
 from data.generate_synth_data import gen_synth_causal_dat
 # load flows
-from models.bivariateFlowCD import BivariateFlowCD
-from models import RECI, ANM, linear_notears_dir, base_entropy_ratio
+from models import RECI, ANM, linear_notears_dir, base_entropy_ratio, BivariateFlowLR
 
 
 def laplace_noise(points):
@@ -71,9 +70,10 @@ def RunSimulations(nSims=25, nPoints=100, causal_mechanism='linear', algolist=No
                 results.loc[sim, a] = 'x->y' if mod.predict_proba(data=dat, form=reci_form_dict[causal_mechanism],
                                                                   scale_input=True) < 0 else 'y->x'
             if a == 'FlowCD':
-                mod = BivariateFlowCD(Nlayers=[2], Nhidden=[1], priorDist='laplace', TrainSplit=.8, epochs=100,
-                                      optMethod='scheduling')
-                results.loc[sim, a] = mod.train(dat)[1]
+                mod = BivariateFlowLR(n_layers=[2], n_hidden=[1], prior_dist='laplace', split=.8, epochs=100,
+                                      opt_method='scheduling')
+                results.loc[sim, a] = 'x->y' if mod.predict_proba(dat) >= 0 else 'y->x'
+                # results.loc[sim, a] = mod.train(dat)[1]
                 # mod.train( np.vstack(( data.A.iloc[0], data.B.iloc[0])).T )[1]
             if a == 'notears':
                 results.loc[sim, a] = \

@@ -1,4 +1,4 @@
-### trial counterfactual predictions of flow models
+# trial counterfactual predictions of flow models
 #
 #
 
@@ -10,13 +10,13 @@ import pylab as plt
 import seaborn as sns
 
 # load flows
-from models.bivariateFlowCD import BivariateFlowCD
+from models.affine_flow_cd import BivariateFlowLR
 
 
 # plt.ion()
 
 
-def counterfactuals(resultsDir=''):
+def counterfactuals(results_dir=''):
     # we generate the same SEM as in the intervention example
 
     nObs = 2500
@@ -38,8 +38,8 @@ def counterfactuals(resultsDir=''):
 
     dat = np.vstack((X_0, X_1, X_2, X_3)).T
 
-    mod = BivariateFlowCD(Nlayers=None, Nhidden=None, priorDist='laplace', epochs=500, optMethod='scheduling')
-    mod.FitFlowSEM(dat=dat, Nlayers=5, Nhidden=10)
+    mod = BivariateFlowLR(n_layers=None, n_hidden=None, prior_dist='laplace', epochs=500, opt_method='scheduling')
+    mod.fit_to_sem(dat, n_layers=5, n_hidden=10)
 
     ### now we run some CF trials:
     # generate latent disturbances:
@@ -63,7 +63,7 @@ def counterfactuals(resultsDir=''):
     xObs = genObs(N)
 
     # get CF prediction for x0=-1
-    mod.predictCounterfactual(xObs=xObs, xCFval=1, interventionIndex=0)
+    mod.predict_counterfactual(observation=xObs, cf_value=1, intervention_index=0)
 
     # compare to true
     N_CF = np.copy(N)
@@ -88,7 +88,7 @@ def counterfactuals(resultsDir=''):
     fig.suptitle(r'Counterfactual predictions', fontsize=22)
 
     xCF_true = [genObs(np.hstack((x, N[0, 1:])).reshape((1, 4)))[0, 3] for x in xvals]
-    xCF_pred = [mod.predictCounterfactual(xObs=xObs, xCFval=x, interventionIndex=0)[0, 3] for x in xvals]
+    xCF_pred = [mod.predict_counterfactual(observation=xObs, cf_value=x, intervention_index=0)[0, 3] for x in xvals]
 
     ax1.plot(xvals, xCF_true, label=r'True $\mathbb{E} [{X_4}_{X_1 \leftarrow \alpha} (n) ] $', linewidth=3,
              linestyle='-.')
@@ -99,7 +99,7 @@ def counterfactuals(resultsDir=''):
     ax1.set_ylabel(r'Predicted value of $X_4$', fontsize=18)
 
     xCF_true = [genObs(np.hstack((N[0, 0], x, N[0, 2:])).reshape((1, 4)))[0, 2] for x in xvals]
-    xCF_pred = [mod.predictCounterfactual(xObs=xObs, xCFval=x, interventionIndex=1)[0, 2] for x in xvals]
+    xCF_pred = [mod.predict_counterfactual(observation=xObs, cf_value=x, intervention_index=1)[0, 2] for x in xvals]
 
     ax2.plot(xvals, xCF_true, label=r'True $\mathbb{E} [{X_3}_{X_2 \leftarrow \alpha} (n) ] $', linewidth=3,
              linestyle='-.')
@@ -111,4 +111,4 @@ def counterfactuals(resultsDir=''):
 
     plt.tight_layout()
     plt.subplots_adjust(top=0.925)
-    plt.savefig(os.path.join(resultsDir, 'counterfactuals_4d.pdf'), dpi=300)
+    plt.savefig(os.path.join(results_dir, 'counterfactuals_4d.pdf'), dpi=300)
