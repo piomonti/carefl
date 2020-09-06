@@ -75,24 +75,24 @@ class LinearNOTEARS:
         g_obj = np.concatenate((G_smooth + self.lambda1, - G_smooth + self.lambda1), axis=None)
         return obj, g_obj
 
-    def predict_proba(self, X):
+    def predict_proba(self, data):
         """
         infer the causal direction based on linear implementation of the NOTEARS
         algorithm presented by Zheng et al (2018, NuerIPS).
 
         Final changes (lines 112 onwards) apply to bivariate measures of causal direciton!
 
-        Solve min_W L(W; X) + lambda1 ‖W‖_1 s.t. h(W) = 0 using augmented Lagrangian.
+        Solve min_W L(W; data) + lambda1 ‖W‖_1 s.t. h(W) = 0 using augmented Lagrangian.
         """
 
-        n, d = X.shape
+        n, d = data.shape
         self.d = d
         w_est, rho, alpha, h = np.zeros(2 * d * d), 1.0, 0.0, np.inf  # double w_est into (w_pos, w_neg)
         bnds = [(0, 0) if i == j else (0, None) for _ in range(2) for i in range(d) for j in range(d)]
         for _ in range(self.max_iter):
             w_new, h_new = None, None
             while rho < self.rho_max:
-                sol = sopt.minimize(self._func, x0=w_est, args=(X, rho, alpha),
+                sol = sopt.minimize(self._func, x0=w_est, args=(data, rho, alpha),
                                     method='L-BFGS-B', jac=True, bounds=bnds)
                 w_new = sol.x
                 h_new, _ = self._h(self._adj(w_new))
@@ -104,7 +104,7 @@ class LinearNOTEARS:
             alpha += rho * h
             if h <= self.h_tol or rho >= self.rho_max:
                 break
-        W_est = self._adj(w_est, d)
+        W_est = self._adj(w_est)
         W_est[np.abs(W_est) < self.w_threshold] = 0
         self.W_est = W_est
 
