@@ -16,11 +16,13 @@ class RECI:
 
     """
 
-    def __init__(self):
+    def __init__(self, form='linear', scale_input=False, k=3):
         """Init the model."""
-        super(RECI, self).__init__()
+        self.form = form
+        self.scale_input = scale_input
+        self.k = k
 
-    def predict_proba(self, data, form='linear', scale_input=False, d=3):
+    def predict_proba(self, data):
         """Prediction method for pairwise causal inference using the ANM model.
 
         Args:
@@ -33,7 +35,7 @@ class RECI:
 
         x = data[:, 0]
         y = data[:, 1]
-        if scale_input:
+        if self.scale_input:
             x = scale(x).reshape((-1, 1))
             y = scale(y).reshape((-1, 1))
         else:
@@ -41,14 +43,20 @@ class RECI:
             x = MinMaxScaler().fit_transform(x.reshape((-1, 1)))
             y = MinMaxScaler().fit_transform(y.reshape((-1, 1)))
 
-        return self.compute_residual(x, y, form=form, d=d) - self.compute_residual(y, x, form=form, d=d)
+        p = self.compute_residual(x, y, form=self.form, k=self.k) - self.compute_residual(y, x, form=self.form,
+                                                                                          k=self.k)
+        causal_dir = 'x->y' if p < 0 else 'y->x'
+        return p, causal_dir
 
-    def compute_residual(self, x, y, form='linear', d=3):
+    @staticmethod
+    def compute_residual(x, y, form='linear', k=3):
         """Compute the fitness score of the ANM model in the x->y direction.
 
         Args:
             x (np.ndarray): Variable seen as cause
             y (np.ndarray): Variable seen as effect
+            form (str): functional form
+            k (int): degree of polynom when form == `poly`
 
         Returns:
             float: ANM fit score
@@ -65,7 +73,7 @@ class RECI:
             residuals = y - res.predict(x)
             return np.median(residuals ** 2)
         elif form == 'poly':
-            features = np.hstack([x ** i for i in range(1, d)])
+            features = np.hstack([x ** i for i in range(1, k)])
             res = LinearRegression().fit(features, y)
             residuals = y - res.predict(features)
             return np.median(residuals ** 2)

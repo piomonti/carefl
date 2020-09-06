@@ -36,7 +36,7 @@ class BivariateFlowLR:
         self.device = device
         self.verbose = verbose
 
-    def predict_proba(self, data, **kwargs):
+    def predict_proba(self, data):
         """Prediction method for pairwise causal inference
         using the Affine Flow LR model.
 
@@ -49,7 +49,7 @@ class BivariateFlowLR:
         """
 
         p, _, _ = self.fit_flows(data)
-        return p
+        return p, self.direction
 
     def _update_dir(self, p):
         self.flow = self.flow_xy if p >= 0 else self.flow_yx

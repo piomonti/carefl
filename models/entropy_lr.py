@@ -74,39 +74,44 @@ def cumulant_hyv13_ratio(x, y):
     return R, predictCausalDir
 
 
-def base_entropy_ratio(x, y, entropy='Hyv98', normalize=True):
+class EntropyLR:
     """
     determine causal direction based on LR as described in Hyvarinen & Smith (2013)
     """
 
-    # first scale
-    x = scale(x)
-    y = scale(y)
+    def __init__(self, entropy='Hyv98', normalize=True):
+        assert entropy in ['Hyv98', 'Kraskov04', 'WG98']
+        self.entropy = entropy
+        self.normalize = normalize
 
-    # estimate correlation coef
-    rho = np.corrcoef(x, y)[0, 1]
+    def predict_proba(self, data):
+        # first scale
+        x, y = data[:, 0], data[:, 1]
+        x = scale(x)
+        y = scale(y)
 
-    assert entropy in ['Hyv98', 'Kraskov04', 'WG98']
+        # estimate correlation coef
+        rho = np.corrcoef(x, y)[0, 1]
 
-    functionDict = {'Hyv98': DiffEntropyHyv1998,
-                    'Kraskov04': DiffEntropyKraskov2004,
-                    'WG98': DiffEntropyWG1999}
+        functionDict = {'Hyv98': DiffEntropyHyv1998,
+                        'Kraskov04': DiffEntropyKraskov2004,
+                        'WG98': DiffEntropyWG1999}
 
-    entFunc = functionDict[entropy]
+        entFunc = functionDict[self.entropy]
 
-    # compute LR of x->y
-    resid = y - rho * x
-    if normalize:
-        resid /= np.std(resid)
-    L_xy = -1 * entFunc(x) - entFunc(resid)
+        # compute LR of x->y
+        resid = y - rho * x
+        if self.normalize:
+            resid /= np.std(resid)
+        L_xy = -1 * entFunc(x) - entFunc(resid)
 
-    # compute LR of x<-y
-    resid = x - rho * y
-    if normalize:
-        resid /= np.std(resid)
-    L_yx = -1 * entFunc(y) - entFunc(resid)
+        # compute LR of x<-y
+        resid = x - rho * y
+        if self.normalize:
+            resid /= np.std(resid)
+        L_yx = -1 * entFunc(y) - entFunc(resid)
 
-    LR = (L_xy - L_yx)
-    predictCausalDir = 'x->y' if LR > 0 else 'y->x'
+        LR = (L_xy - L_yx)
+        causal_dir = 'x->y' if LR > 0 else 'y->x'
 
-    return LR, predictCausalDir
+        return LR, causal_dir
