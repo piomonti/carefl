@@ -84,7 +84,7 @@ class BivariateFlowLR:
                 torch.manual_seed(0)
                 flow_xy, _ = self._init_and_train_flow(x, nh, l, self.prior_dist, self.epochs, self.device,
                                                        verbose=False)
-                score = np.nanmean(flow_xy.log_likelihood(torch.tensor(x_test.astype(np.float32))))
+                score = np.nanmean(flow_xy.log_likelihood(x_test))
                 if score > best_results['x->y']['score']:
                     best_results['x->y']['score'] = score
                     best_results['x->y']['nh'] = nh
@@ -98,7 +98,7 @@ class BivariateFlowLR:
                 torch.manual_seed(0)
                 flow_yx, _ = self._init_and_train_flow(x[:, [1, 0]], nh, l, self.prior_dist, self.epochs, self.device,
                                                        verbose=False)
-                score = np.nanmean(flow_yx.log_likelihood(torch.tensor(x_test[:, [1, 0]].astype(np.float32))))
+                score = np.nanmean(flow_yx.log_likelihood(x_test[:, [1, 0]]))
                 if score > best_results['y->x']['score']:
                     best_results['y->x']['score'] = score
                     best_results['y->x']['nh'] = nh

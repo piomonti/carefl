@@ -34,6 +34,7 @@ https://arxiv.org/abs/1912.02762
 """
 
 import torch
+import numpy as np
 from torch import nn
 
 from nflib.nets import LeafParam, MLP, ARMLP
@@ -436,6 +437,8 @@ class NormalizingFlowModel(nn.Module):
         return xs
 
     def log_likelihood(self, x):
+        if type(x) is np.ndarray:
+            x = torch.tensor(x.astype(np.float32))
         _, prior_logprob, log_det = self.forward(x)
         return (prior_logprob + log_det).cpu().detach().numpy()
 
