@@ -35,7 +35,7 @@ def intervention_sem(n_obs, dim=4, seed=0, random=True):
         raise NotImplementedError('will be implemented soon')
 
 
-def intervention4d(results_dir=''):
+def intervention4d_mse(results_dir=''):
     results = {"x2": [], "x3": [], "x2e": [], "x3e": []}
     n_obs_list = [25, 100, 250, 500, 1000, 2000, 5000]
     for n_obs in n_obs_list:
@@ -95,7 +95,7 @@ def intervention4d(results_dir=''):
 def intervention(dim=4, results_dir=''):
     if dim == 4:
         # higher D examples
-        n_obs = 1500
+        n_obs = 2500
         dat, coeffs = intervention_sem(n_obs, dim=dim, seed=0, random=False)
 
         # example plots:
@@ -118,11 +118,11 @@ def intervention(dim=4, results_dir=''):
         plt.plot(xvals, xvals, label='True', color=sns.color_palette("muted", 8)[2], linewidth=2, alpha=.8)
         plt.plot(xvals, coeffs[1] * xvals * xvals, color=sns.color_palette("muted", 8)[2], linewidth=2, alpha=.8)
 
-        plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=10, d=4)[0, 2] for x in xvals]),
+        plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=100, d=4)[0][0, 2] for x in xvals]),
                  linewidth=3, linestyle='-.',
                  label=r'Predicted $\mathbb{E} [X_3| do(X_1=\alpha)]$')  # remove 0 indexing in legend
         # and distribution of X_3 | do(X_0=x) should be quadratic
-        plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=10, d=4)[0, 3] for x in xvals]),
+        plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=100, d=4)[0][0, 3] for x in xvals]),
                  linewidth=3, linestyle='-.',
                  label=r'Predicted $\mathbb{E} [X_4| do(X_1=\alpha)]$')  # remove 0 indexing in legend
 
@@ -139,7 +139,7 @@ def intervention(dim=4, results_dir=''):
         fig.suptitle(r'Interventional predictions under $do(X_1=\alpha)$', fontsize=18)
 
         ax1.plot(xvals, xvals, label=r'True $\mathbb{E} [X_3| do(X_1=\alpha)]$', linewidth=3, linestyle=':')
-        ax1.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=10, d=4)[0, 2] for x in xvals]),
+        ax1.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=100, d=4)[0][0, 2] for x in xvals]),
                  linewidth=3, linestyle='-.', label=r'Predicted $\mathbb{E} [X_3| do(X_1=\alpha)]$',
                  alpha=.8)  # remove 0 indexing in legend
 
@@ -149,7 +149,7 @@ def intervention(dim=4, results_dir=''):
 
         ax2.plot(xvals, coeffs[1] * xvals * xvals, label=r'True $\mathbb{E} [X_4| do(X_1=\alpha)]$', linewidth=3,
                  linestyle=':')
-        ax2.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=10, d=4)[0, 3] for x in xvals]),
+        ax2.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=100, d=4)[0][0, 3] for x in xvals]),
                  linewidth=3, linestyle='-.', label=r'Predicted $\mathbb{E} [X_4| do(X_1=\alpha)]$',
                  alpha=.8)  # remove 0 indexing in legend
 
@@ -167,15 +167,15 @@ def intervention(dim=4, results_dir=''):
         # and the distribution of X_2 | do(X_1=x) should be quadratic
         plt.plot(xvals,
                  np.array(
-                     [mod.predict_intervention(x0_val=x, n_samples=10, d=4, iidx=1)[0, 2] for x in
+                     [mod.predict_intervention(x0_val=x, n_samples=100, d=4, iidx=1)[0][0, 2] for x in
                       xvals]),
-                 linewidth=3, linestyle='-.', label=r'$X_2| do(X_1=x)$')
+                 linewidth=3, linestyle='-.', label=r'$X_3| do(X_1=x)$')
         # and distribution of X_3 | do(X_0=x) should be quadratic
         plt.plot(xvals,
                  np.array(
-                     [mod.predict_intervention(x0_val=x, n_samples=10, d=4, iidx=1)[0, 3] for x in
+                     [mod.predict_intervention(x0_val=x, n_samples=100, d=4, iidx=1)[0][0, 3] for x in
                       xvals]),
-                 linewidth=3, linestyle='-.', label=r'$X_3| do(X_1=x)$')
+                 linewidth=3, linestyle='-.', label=r'$X_4| do(X_1=x)$')
         plt.legend()
         plt.savefig(os.path.join(results_dir, 'intervention_4d_3.pdf'), dpi=300)
 
@@ -183,8 +183,8 @@ def intervention(dim=4, results_dir=''):
 
         plt.figure()
         plt.scatter(dat[:, 0], dat[:, 3])
-        plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=10, d=4)[0, 3] for x in xvals]),
-                 linewidth=3, linestyle='-.', label=r'$X_3| do(X_0=x)$', color='red')
+        plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=100, d=4)[0][0, 3] for x in xvals]),
+                 linewidth=3, linestyle='-.', label=r'$X_4| do(X_0=x)$', color='red')
         plt.legend()
         plt.savefig(os.path.join(results_dir, 'intervention_4d_4.pdf'), dpi=300)
 
