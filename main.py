@@ -8,7 +8,7 @@ import os
 
 from runners.cause_effect_pairs_runner import RunCauseEffectPairs
 from runners.counterfactual_trials import counterfactuals
-from runners.intervention_trials import intervention
+from runners.intervention_trials import intervention, intervention4d
 from runners.simulation_runner import RunSimulations
 
 
@@ -31,6 +31,7 @@ def parse_input():
 if __name__ == '__main__':
     # parse command line arguments
     args = parse_input()
+    args.intervention = True
 
     # create results directory
     os.makedirs(args.resultsDir, exist_ok=True)
@@ -141,7 +142,8 @@ if __name__ == '__main__':
     if args.intervention:
         # Run proposed method to perform interventions on the toy example described in the manuscript
         print('running interventions on toy example')
-        intervention(dim=4, results_dir=args.resultsDir)
+        # intervention(dim=4, results_dir=args.resultsDir)
+        intervention4d(results_dir=args.resultsDir)
 
     if args.counterfactual:
         # Run proposed method to perform counterfactuals on the toy example described in the manuscript

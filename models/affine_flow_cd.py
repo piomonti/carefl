@@ -172,89 +172,50 @@ class BivariateFlowLR:
             raise ValueError('Model needs to be fitted first')
         return self.flow.backward(torch.tensor(latent.astype(np.float32)))[0][-1].detach().cpu().numpy()
 
-    def predict_intervention(self, x0_val, n_samples=100, d=2, intervention_index=0):
+    def predict_intervention(self, x0_val, n_samples=100, d=4, iidx=0):
         """
-        we predict the value of x1 given an intervention on x0 (the causal variable)
+        we predict the value of x given an intervention on x_iidx (the causal variable -- assuming it is a root)
 
         this proceeds in 3 steps:
-         - invert flow to find corresponding entry for z0 at x0=x0_val (this is invariant to x1 as x0 is the cause)
-         - sample z1 from prior (number of samples is n_samples)
-         - pass [z0, z1 samples] through flow to get predictive samples for x1| do(x0=x0val)
-
-        for now we only support 2D and 4D examples, will generalize in future!
+         1) invert flow to find corresponding entry for z_iidx at x_iidx=x0_val
+         2) sample z from prior (number of samples is n_samples), and replace z_iidx by inferred value from strep 1
+         3) propagate z through flow to get samples for x | do(x_iidx=x0_val)
         """
+        # invert flow to infer value of latent corresponding to interventional variable
+        x_int = np.zeros((1, d))
+        x_int[0, iidx] = x0_val
+        z_int = self.invert_flow(x_int)[0, iidx]
+        # sample from prior and ensure z_intervention_index = z_int
+        z = self.flow.prior.sample((n_samples,)).cpu().detach().numpy()
+        z_est = np.zeros((1, d))
+        z[:, iidx] = z_est[:, iidx] = z_int
+        # propagate the latent sample through flow
+        x = self.backward_flow(z)
+        x_from_z_est = self.backward_flow(z_est)  # to compare to x when expectation is taken after pass through flow
+        # sanity check: check x_intervention_index == x0_val
+        assert (np.abs(x[:, iidx] - x0_val) < 1e-4).all()
+        return x, x_from_z_est
 
-        if d == 2:
-            # first we invert the flow:
-            input_ = np.array([x0_val, 0]).reshape((1, 2))  # value of x1 here is indifferent
-            z0 = self.invert_flow(input_)[0, 0]
-
-            # now generate samples of z1 from prior
-            z1 = self.flow.prior.sample((n_samples,))[:, 1].cpu().detach().numpy()
-
-            # now we pass forward
-            latentSpace = np.vstack(([z0] * n_samples, z1)).T
-            latentExp = np.array([z0, 0]).reshape((1, 2))
-
-            # finally pass through the generative model to get a distribution over x1 | do(x0=x0val)
-            x1Intervention = self.backward_flow(latentSpace)
-            assert np.abs(x0_val - x1Intervention[0, 0]) < 1e-5
-            return x1Intervention[:, 1], self.backward_flow(latentExp)[0, 1]
-        elif d == 4:
-            # print('intervention for high (4) D case')
-            # we are in the 4D case. Assume [x0,x1] are causes of [x2,x3]
-            # the interventionIndex variable tells us which cause we intervene over (either 0th or 1st entry)
-
-            # first we invert the flow:
-            cause_input = np.zeros((1, 2))
-            cause_input[0, intervention_index] = x0_val
-
-            input_ = np.hstack((cause_input, np.zeros((1, 2))))  # value of other variables here is indifferent
-            latentVal = self.invert_flow(input_)[0, intervention_index]
-
-            # prepare latentExpectation (do sampling later)
-            latentExp = np.zeros((1, 4))
-            latentExp[0, intervention_index] = latentVal
-
-            # now we pass forward
-            x1Intervention = self.backward_flow(latentExp)
-
-            return x1Intervention
-
-            # now generate samples of z1 from prior
-            # z1 = self.flow.flow_share.prior.sample( (nSamples, ) )[ :,1 ].cpu().detach().numpy()
-
-            # now we pass forward
-            # latentSpace = np.vstack(( [z0]*nSamples, z1 )).T
-            # latentExp   = np.array( [z0, 0] ).reshape((1,2))
-
-            # finally pass through the generative model to get a distribution over x1 | do(x0=x0val)
-            # x1Intervention = self.flow.backwardPassFlow( latentSpace )
-            # assert np.abs(x0val - x1Intervention[0,0]) < 1e-5
-            # return x1Intervention[:,1], self.flow.backwardPassFlow( latentExp )[0,1]
-
-    def predict_counterfactual(self, observation, cf_value, intervention_index=0):
+    def predict_counterfactual(self, x_obs, cf_val, iidx=0):
         """
+        given observation x_obs we estimate the counterfactual of setting
+        x_obs[intervention_index] = cf_val
 
-        given observation xObs we estimate the counterfactual of setting
-        xObs[ interventionIndex ] = xCFval
-
-        we follow the 3 steps for counterfactuals
-         1) abduction - pass-forward through flow to infer latents for xObs
-         2) action - pass-forward again for latent associated with xCFval
+        this proceeds in 3 steps:
+         1) abduction - pass-forward through flow to infer latents for x_obs
+         2) action - pass-forward again for latent associated with cf_val
          3) prediction - backward pass through the flow
         """
-
         # abduction:
-        latent_obs = self.invert_flow(observation)
-
+        z_obs = self.invert_flow(x_obs)
         # action (get latent variable value under counterfactual)
-        observation_cf = np.copy(observation)
-        observation_cf[0, intervention_index] = cf_value
-        latent_obs[0, intervention_index] = self.invert_flow(observation_cf)[0, intervention_index]
-
+        x_cf = np.copy(x_obs)
+        x_cf[0, iidx] = cf_val
+        z_cf_val = self.invert_flow(x_cf)[0, iidx]
+        z_obs[0, iidx] = z_cf_val
         # prediction (pass through the flow):
-        return self.backward_flow(latent_obs)
+        x_post_cf = self.backward_flow(z_obs)
+        return x_post_cf
 
 # ______________________________
 # keep the CLassCondFlow implementation for reference in case it is needed

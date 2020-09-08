@@ -63,7 +63,7 @@ def counterfactuals(results_dir=''):
     xObs = genObs(N)
 
     # get CF prediction for x0=-1
-    mod.predict_counterfactual(observation=xObs, cf_value=1, intervention_index=0)
+    mod.predict_counterfactual(x_obs=xObs, cf_val=1, iidx=0)
 
     # compare to true
     N_CF = np.copy(N)
@@ -88,7 +88,7 @@ def counterfactuals(results_dir=''):
     fig.suptitle(r'Counterfactual predictions', fontsize=22)
 
     xCF_true = [genObs(np.hstack((x, N[0, 1:])).reshape((1, 4)))[0, 3] for x in xvals]
-    xCF_pred = [mod.predict_counterfactual(observation=xObs, cf_value=x, intervention_index=0)[0, 3] for x in xvals]
+    xCF_pred = [mod.predict_counterfactual(x_obs=xObs, cf_val=x, iidx=0)[0, 3] for x in xvals]
 
     ax1.plot(xvals, xCF_true, label=r'True $\mathbb{E} [{X_4}_{X_1 \leftarrow \alpha} (n) ] $', linewidth=3,
              linestyle='-.')
@@ -99,7 +99,7 @@ def counterfactuals(results_dir=''):
     ax1.set_ylabel(r'Predicted value of $X_4$', fontsize=18)
 
     xCF_true = [genObs(np.hstack((N[0, 0], x, N[0, 2:])).reshape((1, 4)))[0, 2] for x in xvals]
-    xCF_pred = [mod.predict_counterfactual(observation=xObs, cf_value=x, intervention_index=1)[0, 2] for x in xvals]
+    xCF_pred = [mod.predict_counterfactual(x_obs=xObs, cf_val=x, iidx=1)[0, 2] for x in xvals]
 
     ax2.plot(xvals, xCF_true, label=r'True $\mathbb{E} [{X_3}_{X_2 \leftarrow \alpha} (n) ] $', linewidth=3,
              linestyle='-.')
