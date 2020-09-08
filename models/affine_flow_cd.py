@@ -14,8 +14,7 @@ from torch.utils.data import DataLoader
 
 from data.generate_synth_data import CustomSyntheticDatasetDensity
 # load flows
-from nflib.flows import AffineFullFlow, AffineFullFlowGeneral, NormalizingFlowModel
-from nflib.nets import MLP1layer
+from nflib import AffineFullFlow, AffineFullFlowGeneral, NormalizingFlowModel, MLP1layer
 
 
 class BivariateFlowLR:

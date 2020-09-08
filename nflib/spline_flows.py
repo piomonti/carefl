@@ -153,7 +153,7 @@ def RQS(inputs, unnormalized_widths, unnormalized_heights,
         return outputs, logabsdet
 
 class NSF_AR(nn.Module):
-    """ Neural spline flow, coupling layer, [Durkan et al. 2019] """
+    """ Neural spline flow, autoregressive, [Durkan et al. 2019] """
 
     def __init__(self, dim, K=5, B=3, hidden_dim=8, base_network=MLP):
         super().__init__()
