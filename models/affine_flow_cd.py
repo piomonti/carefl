@@ -26,6 +26,7 @@ class BivariateFlowLR:
         self.flow_xy = None
         self.flow_yx = None
         self.flow = None
+        self.dim = None
 
         self.split = split
         self.n_layers = n_layers
@@ -58,6 +59,7 @@ class BivariateFlowLR:
         """
         for each direction, fit multiple flow models with varying hidden size and depth, and keep model with best fit
         """
+        self.dim = x.shape[1]
         # prepare a results dir, where for each direction we train a flow for different depths and hidden dim
         results = pd.DataFrame({'L': np.repeat(self.n_layers, len(self.n_hidden)),
                                 'nh': self.n_hidden * len(self.n_layers),
@@ -158,6 +160,7 @@ class BivariateFlowLR:
         """
         assuming data columns follow the causal ordering, we fit the associated SEM
         """
+        self.dim = data.shape[1]
         flow, _ = self._init_and_train_flow(data, n_layers, n_hidden,
                                             self.prior_dist, self.epochs, self.device, verbose=self.verbose)
         self.flow = flow
@@ -172,7 +175,7 @@ class BivariateFlowLR:
             raise ValueError('Model needs to be fitted first')
         return self.flow.backward(torch.tensor(latent.astype(np.float32)))[0][-1].detach().cpu().numpy()
 
-    def predict_intervention(self, x0_val, n_samples=100, d=4, iidx=0):
+    def predict_intervention(self, x0_val, n_samples=100, iidx=0):
         """
         we predict the value of x given an intervention on x_iidx (the causal variable -- assuming it is a root)
 
@@ -182,19 +185,19 @@ class BivariateFlowLR:
          3) propagate z through flow to get samples for x | do(x_iidx=x0_val)
         """
         # invert flow to infer value of latent corresponding to interventional variable
-        x_int = np.zeros((1, d))
+        x_int = np.zeros((1, self.dim))
         x_int[0, iidx] = x0_val
         z_int = self.invert_flow(x_int)[0, iidx]
         # sample from prior and ensure z_intervention_index = z_int
         z = self.flow.prior.sample((n_samples,)).cpu().detach().numpy()
-        z_est = np.zeros((1, d))
+        z_est = np.zeros((1, self.dim))
         z[:, iidx] = z_est[:, iidx] = z_int
         # propagate the latent sample through flow
         x = self.backward_flow(z)
         x_from_z_est = self.backward_flow(z_est)  # to compare to x when expectation is taken after pass through flow
         # sanity check: check x_intervention_index == x0_val
         assert (np.abs(x[:, iidx] - x0_val) < 1e-4).all()
-        return x.mean(0).reshape((1, d)), x_from_z_est
+        return x.mean(0).reshape((1, self.dim)), x_from_z_est
 
     def predict_counterfactual(self, x_obs, cf_val, iidx=0):
         """
