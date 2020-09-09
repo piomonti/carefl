@@ -13,8 +13,46 @@ from torch.distributions import Laplace, Uniform, TransformedDistribution, Sigmo
 from torch.utils.data import DataLoader
 
 from data.generate_synth_data import CustomSyntheticDatasetDensity
-# load flows
-from nflib import AffineFullFlow, AffineFullFlowGeneral, NormalizingFlowModel, MLP1layer
+from nflib import AffineCL, NormalizingFlowModel, MLP1layer, MAF, NSF_AR
+
+
+def init_and_train_flow(data, nh, l, prior_dist, epochs=100, device='cpu', opt_method='adam', verbose=False):
+    # init and save 2 normalizing flows, 1 for each direction
+    d = data.shape[1]
+    if prior_dist == 'laplace':
+        prior = Laplace(torch.zeros(d), torch.ones(d))
+    else:
+        prior = TransformedDistribution(Uniform(torch.zeros(d), torch.ones(d)), SigmoidTransform().inv)
+    flows = [AffineCL(dim=d, nh=nh, scale_base=True, shift_base=True, net_class=MLP1layer) for _ in range(l)]
+    flow = NormalizingFlowModel(prior, flows).to(device)
+
+    dset = CustomSyntheticDatasetDensity(data.astype(np.float32))
+    train_loader = DataLoader(dset, shuffle=True, batch_size=128)
+    optimizer = optim.Adam(flow.parameters(), lr=1e-4, weight_decay=1e-5)
+    if opt_method == 'scheduler':
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1, patience=3, verbose=verbose)
+
+    flow.train()
+    loss_vals = []
+    for e in range(epochs):
+        loss_val = 0
+        for _, x in enumerate(train_loader):
+            x.to(device)
+            # compute loss
+            _, prior_logprob, log_det = flow(x)
+            loss = - torch.sum(prior_logprob + log_det)
+            loss_val += loss.item()
+            # optimize
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        if opt_method == 'scheduler':
+            scheduler.step(loss_val / len(train_loader))
+        if verbose:
+            print('epoch {}/{} \tloss: {}'.format(e, epochs, loss_val))
+        loss_vals.append(loss_val)
+    return flow, loss_vals
 
 
 class BivariateFlowLR:
@@ -84,8 +122,8 @@ class BivariateFlowLR:
                 #         Conditional Flow Model: X->Y
                 # -------------------------------------------------------------------------------
                 torch.manual_seed(0)
-                flow_xy, _ = self._init_and_train_flow(x, nh, l, self.prior_dist, self.epochs, self.device,
-                                                       opt_method=self.opt_method, verbose=self.verbose)
+                flow_xy, _ = init_and_train_flow(x, nh, l, self.prior_dist, self.epochs, self.device,
+                                                 opt_method=self.opt_method, verbose=self.verbose)
                 score = np.nanmean(flow_xy.log_likelihood(x_test))
                 if score > best_results['x->y']['score']:
                     best_results['x->y']['score'] = score
@@ -98,8 +136,8 @@ class BivariateFlowLR:
                 #         Conditional Flow Model: Y->X
                 # -------------------------------------------------------------------------------
                 torch.manual_seed(0)
-                flow_yx, _ = self._init_and_train_flow(x[:, [1, 0]], nh, l, self.prior_dist, self.epochs, self.device,
-                                                       opt_method=self.opt_method, verbose=self.verbose)
+                flow_yx, _ = init_and_train_flow(x[:, [1, 0]], nh, l, self.prior_dist, self.epochs, self.device,
+                                                 opt_method=self.opt_method, verbose=self.verbose)
                 score = np.nanmean(flow_yx.log_likelihood(x_test[:, [1, 0]]))
                 if score > best_results['y->x']['score']:
                     best_results['y->x']['score'] = score
@@ -113,57 +151,13 @@ class BivariateFlowLR:
 
         return p, best_results, results
 
-    @staticmethod
-    def _init_and_train_flow(data, nh, l, prior_dist, epochs, device, opt_method='adam', verbose=False):
-        # init and save 2 normalizing flows, 1 for each direction
-        d = data.shape[1]
-        if d > 2:
-            print('using higher D implementation')
-            affine_flow = AffineFullFlowGeneral
-        else:
-            affine_flow = AffineFullFlow
-        if prior_dist == 'laplace':
-            prior = Laplace(torch.zeros(d), torch.ones(d))
-        else:
-            prior = TransformedDistribution(Uniform(torch.zeros(d), torch.ones(d)), SigmoidTransform().inv)
-        flows = [affine_flow(dim=d, nh=nh, parity=False, net_class=MLP1layer) for _ in range(l)]
-        flow = NormalizingFlowModel(prior, flows).to(device)
-
-        dset = CustomSyntheticDatasetDensity(data.astype(np.float32), device=device)
-        train_loader = DataLoader(dset, shuffle=True, batch_size=128)
-        optimizer = optim.Adam(flow.parameters(), lr=1e-4, weight_decay=1e-5)
-        if opt_method == 'scheduler':
-            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1, patience=3, verbose=verbose)
-
-        flow.train()
-        loss_vals = []
-        for e in range(epochs):
-            loss_val = 0
-            for _, x in enumerate(train_loader):
-                x.to(device)
-                # compute loss
-                _, prior_logprob, log_det = flow(x)
-                loss = - torch.sum(prior_logprob + log_det)
-                loss_val += loss.item()
-                # optimize
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-
-            if opt_method == 'scheduler':
-                scheduler.step(loss_val / len(train_loader))
-            if verbose:
-                print('epoch {}/{} \tloss: {}'.format(e, epochs, loss_val))
-            loss_vals.append(loss_val)
-        return flow, loss_vals
-
     def fit_to_sem(self, data, dag):
         """
         assuming data columns follow the causal ordering, we fit the associated SEM
         """
         self.dim = data.shape[1]
-        flow, _ = self._init_and_train_flow(data, self.n_layers[0], self.n_hidden[0], self.prior_dist,
-                                            self.epochs, self.device, verbose=self.verbose, opt_method=self.opt_method)
+        flow, _ = init_and_train_flow(data, self.n_layers[0], self.n_hidden[0], self.prior_dist,
+                                      self.epochs, self.device, verbose=self.verbose, opt_method=self.opt_method)
         self.flow = flow
 
     def invert_flow(self, data):
@@ -197,7 +191,7 @@ class BivariateFlowLR:
         x = self.backward_flow(z)
         x_from_z_est = self.backward_flow(z_est)  # to compare to x when expectation is taken after pass through flow
         # sanity check: check x_intervention_index == x0_val
-        assert (np.abs(x[:, iidx] - x0_val) < 1e-4).all()
+        assert (np.abs(x[:, iidx] - x0_val) < 1e-3).all()
         return x.mean(0).reshape((1, self.dim)), x_from_z_est
 
     def predict_counterfactual(self, x_obs, cf_val, iidx=0):
