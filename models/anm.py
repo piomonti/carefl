@@ -108,6 +108,9 @@ class ANM:
     It is proven that in such case if the data is generated using an additive noise model, the model would only be able
     to fit in the true causal direction.
 
+    **Multivariate case**: This class also supports interventions in a multivariate case, where we suppose that
+    the interventional variable is a root variable (thus equal to a noise variable as per the ANM model)
+
     .. note::
        Ref : Hoyer, Patrik O and Janzing, Dominik and Mooij, Joris M and Peters, Jonas and Schölkopf, Bernhard,
        "Nonlinear causal discovery with additive noise models", NIPS 2009
@@ -116,7 +119,12 @@ class ANM:
 
     def __init__(self):
         """Init the model."""
-        pass
+        self.dag = None
+        self.parents = None
+        self.gps = None
+        self.dim = None
+        self.roots = None
+        self.effects = None
 
     def predict_proba(self, data):
         """Prediction method for pairwise causal inference using the ANM model.
@@ -150,3 +158,82 @@ class ANM:
         indepscore = normalized_hsic(y_predict - y, x)
 
         return indepscore
+
+    def fit_to_sem(self, data, dag):
+        # the dag is an adjacency matrix that describes the sem followed by the data
+        parents, roots, sorted_effects = sorted_roots_effects_from_dag(dag)
+        gps = {}
+        for u, v in parents.items():
+            gp = GaussianProcessRegressor().fit(data[:, v], data[:, u])
+            gps[u] = gp
+        self.dag = dag
+        self.parents = parents
+        self.roots = roots
+        self.effects = sorted_effects
+        self.gps = gps
+        self.dim = data.shape[1]
+
+    def predict_intervention(self, x0_val, n_samples=100, iidx=0):
+        # we suppose we only intervene on roots
+        assert iidx in self.roots
+        # generate a laplace noise vector which will be transformed into final sample
+        x = np.random.laplace(loc=0, scale=1. / np.sqrt(2), size=(n_samples, self.dim))
+        x_est = np.zeros((1, self.dim))
+        # in an ANM's SEM, roots are equal to their latent disturbance
+        x[:, iidx] = x_est[:, iidx] = x0_val
+        for u in self.effects:
+            x[:, u] = self.gps[u].predict(x.copy()[:, self.parents[u]])
+            x_est[:, u] = self.gps[u].predict(x_est.copy()[:, self.parents[u]])
+
+        return x.mean(0).reshape((1, self.dim)), x_est
+
+
+
+def sorted_roots_effects_from_dag(dag):
+    """
+    find the roots (causes) and effects in a dag and return them sorted
+    :param dag (np.ndarray): an adjacency matric that describes a DAG
+    :return (tuple): return parents, roots, sorted_effects where:
+        - parents: a dictionary whose keys are the effects, and values are their parents in the dag
+        - roots: the roots of the dag
+        - sorted_effects: a sorted list of the keys in parents, where the sorting follows the permutation that describes
+            the ordering of the dag
+    roots + sorted_effects together contain all variables sorted according to the SEM
+    """
+    parents = {}
+    # for each variable x_i, get its parents in the dag
+    for u, v in zip(*np.where(dag != 0)):
+        if u not in parents.keys():
+            parents[DicIdx(u)] = []
+        parents[u].append(v)
+    for u in parents.keys():
+        u.set_dict(parents)
+    roots = [u for u in np.arange(dag.shape[0]) if u not in parents.keys()]
+    return parents, roots, sorted(parents)
+
+
+class DicIdx:
+    """an int that represents a dictionary index, where __lt__ function uses the dictionary values for comparison"""
+    def __init__(self, x, dic=None):
+        self.x = x
+        self.dic = dic
+
+    def __lt__(self, other):
+        return self.x in other.dic[other.x] if other.dic is not None else False
+
+    def __repr__(self):
+        return str(int(self.x))
+
+    def __eq__(self, other):
+        if type(other) in [float, int, np.int64, np.int_]:
+            return self.x == other
+        elif type(other) == DicIdx:
+            return self.x == other.x
+        else:
+            raise TypeError("Can't compare to {} or type {}".format(other, type(other)))
+
+    def __hash__(self):
+        return int(self.x)
+
+    def set_dict(self, dic):
+        self.dic = dic
