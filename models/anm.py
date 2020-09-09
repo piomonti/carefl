@@ -178,7 +178,7 @@ class ANM:
         regs = {}
         for u, v in parents.items():
             Reg = self._get_regressor()
-            reg = Reg.fit(data[:, v], data[:, u])
+            reg = Reg.fit(data[:, v], data[:, u.x])
             regs[u] = reg
         self.dag = dag
         self.parents = parents

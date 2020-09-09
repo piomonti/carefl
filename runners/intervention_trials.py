@@ -42,9 +42,11 @@ def intervention4d_mse(results_dir=''):
     models = ['flow', 'gp', 'linear']
     results = {mod: {"x2": [], "x3": [], "x2e": [], "x3e": []} for mod in models}
     for n_obs in n_obs_list:
+        print("** {} observations **".format(n_obs))
         # generate coeffcients for equation (12), and data from that SEM
         dat, coeffs, dag = intervention_sem(n_obs, dim=4, seed=0, random=False)
         for model in models:
+            print("fitting a {} model".format(model))
             # fit to an affine autoregressive flow or ANM with gp/linear functions
             mod = BivariateFlowLR(n_layers=5, n_hidden=10, epochs=500,
                                   opt_method='scheduling') if model == 'flow' else ANM(method=model)
@@ -68,10 +70,10 @@ def intervention4d_mse(results_dir=''):
             mse_x3 = np.mean((x_int_sample[:, 3] - coeffs[1] * avals * avals) ** 2)
             mse_x3e = np.mean((x_int_exp[:, 3] - coeffs[1] * avals * avals) ** 2)
             # store results
-            results[mod]["x2"].append(mse_x2)
-            results[mod]["x3"].append(mse_x3)
-            results[mod]["x2e"].append(mse_x2e)
-            results[mod]["x3e"].append(mse_x3e)
+            results[model]["x2"].append(mse_x2)
+            results[model]["x3"].append(mse_x3)
+            results[model]["x2e"].append(mse_x2e)
+            results[model]["x3e"].append(mse_x3e)
 
     # plot the MSEs
     sns.set_style("whitegrid")
