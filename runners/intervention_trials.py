@@ -31,7 +31,7 @@ def intervention_sem(n_obs, dim=4, seed=0, random=True):
         X_2 = X_0 + coeffs[0] * (X_1 * X_1 * X_1) + np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
         X_3 = -X_1 + coeffs[1] * (X_0 * X_0) + np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
         # create the adjacency matrix
-        dag = np.array([0, 0, 0, 0], [0, 0, 0, 0, [1, 1, 0, 0], [1, 1, 0, 0]])
+        dag = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0]])
         return np.vstack((X_0, X_1, X_2, X_3)).T, coeffs, dag
     else:
         raise NotImplementedError('will be implemented soon')
@@ -105,7 +105,7 @@ def intervention(dim=4, results_dir=''):
         plt.scatter(dat[:, 0], dat[:, 3])
 
         mod = BivariateFlowLR(n_layers=5, n_hidden=10, prior_dist='laplace', epochs=500, opt_method='scheduling')
-        mod.fit_to_sem(dat)
+        mod.fit_to_sem(dat, dag)
 
         # -----
 
@@ -216,7 +216,7 @@ def intervention(dim=4, results_dir=''):
 
         # define and fit flow model:
         mod = BivariateFlowLR(n_layers=5, n_hidden=10, prior_dist='laplace', epochs=500, opt_method='scheduling')
-        mod.fit_to_sem(dat)
+        mod.fit_to_sem(dat, None)
 
         # plot data distribution:
         plt.scatter(dat[:, 0], dat[:, 1])
