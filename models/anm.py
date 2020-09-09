@@ -8,6 +8,7 @@
 
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import scale
 
 
@@ -117,14 +118,19 @@ class ANM:
        https://papers.nips.cc/paper/3548-nonlinear-causal-discovery-with-additive-noise-models.pdf
     """
 
-    def __init__(self):
+    def __init__(self, method='gp'):
         """Init the model."""
+        assert method in ['gp', 'linear']
+        self.method = method
         self.dag = None
         self.parents = None
-        self.gps = None
+        self.regs = None
         self.dim = None
         self.roots = None
         self.effects = None
+
+    def _get_regressor(self):
+        return GaussianProcessRegressor() if self.method == 'gp' else LinearRegression()
 
     def predict_proba(self, data):
         """Prediction method for pairwise causal inference using the ANM model.
@@ -153,24 +159,32 @@ class ANM:
         Returns:
             float: ANM fit score
         """
-        gp = GaussianProcessRegressor().fit(x, y)
-        y_predict = gp.predict(x)
+        Reg = self._get_regressor()
+        reg = Reg.fit(x, y)
+        y_predict = reg.predict(x)
         indepscore = normalized_hsic(y_predict - y, x)
 
         return indepscore
 
     def fit_to_sem(self, data, dag):
+        """
+        Fits an ANM model to an SEM described by the dag adjecency matrix
+        :param data: samples to fit to the SEM
+        :param dag: adjacency matrix describing the DAG associated with the SEM: dag_ij != 0 iif x_j -> x_i in the DAG
+        :return: None -- updated the internal fields of the class
+        """
         # the dag is an adjacency matrix that describes the sem followed by the data
         parents, roots, sorted_effects = sorted_roots_effects_from_dag(dag)
-        gps = {}
+        regs = {}
         for u, v in parents.items():
-            gp = GaussianProcessRegressor().fit(data[:, v], data[:, u])
-            gps[u] = gp
+            Reg = self._get_regressor()
+            reg = Reg.fit(data[:, v], data[:, u])
+            regs[u] = reg
         self.dag = dag
         self.parents = parents
         self.roots = roots
         self.effects = sorted_effects
-        self.gps = gps
+        self.regs = regs
         self.dim = data.shape[1]
 
     def predict_intervention(self, x0_val, n_samples=100, iidx=0):
@@ -182,22 +196,21 @@ class ANM:
         # in an ANM's SEM, roots are equal to their latent disturbance
         x[:, iidx] = x_est[:, iidx] = x0_val
         for u in self.effects:
-            x[:, u] = self.gps[u].predict(x.copy()[:, self.parents[u]])
-            x_est[:, u] = self.gps[u].predict(x_est.copy()[:, self.parents[u]])
+            x[:, u] = self.regs[u].predict(x.copy()[:, self.parents[u]])
+            x_est[:, u] = self.regs[u].predict(x_est.copy()[:, self.parents[u]])
 
         return x.mean(0).reshape((1, self.dim)), x_est
-
 
 
 def sorted_roots_effects_from_dag(dag):
     """
     find the roots (causes) and effects in a dag and return them sorted
-    :param dag (np.ndarray): an adjacency matric that describes a DAG
-    :return (tuple): return parents, roots, sorted_effects where:
-        - parents: a dictionary whose keys are the effects, and values are their parents in the dag
-        - roots: the roots of the dag
-        - sorted_effects: a sorted list of the keys in parents, where the sorting follows the permutation that describes
-            the ordering of the dag
+    :param dag : (np.ndarray) an adjacency matric that describes a DAG
+    :return: (tuple) return parents, roots, sorted_effects where:
+        - parents: (dict) a dictionary whose keys are the effects, and values are their parents in the dag
+        - roots: (list) the roots of the dag
+        - sorted_effects: (list) a sorted list of the keys in parents, where the sorting follows the permutation that
+            describes the ordering of the dag
     roots + sorted_effects together contain all variables sorted according to the SEM
     """
     parents = {}
@@ -209,17 +222,19 @@ def sorted_roots_effects_from_dag(dag):
     for u in parents.keys():
         u.set_dict(parents)
     roots = [u for u in np.arange(dag.shape[0]) if u not in parents.keys()]
-    return parents, roots, sorted(parents)
+    sorted_effects = [i.x for i in sorted(parents)]
+    return parents, roots, sorted_effects
 
 
 class DicIdx:
     """an int that represents a dictionary index, where __lt__ function uses the dictionary values for comparison"""
+
     def __init__(self, x, dic=None):
         self.x = x
         self.dic = dic
 
     def __lt__(self, other):
-        return self.x in other.dic[other.x] if other.dic is not None else False
+        return self.x in other.dic[other.x] if other.dic else False
 
     def __repr__(self):
         return str(int(self.x))
@@ -230,7 +245,7 @@ class DicIdx:
         elif type(other) == DicIdx:
             return self.x == other.x
         else:
-            raise TypeError("Can't compare to {} or type {}".format(other, type(other)))
+            raise TypeError("Can't compare to {} of type {}".format(other, type(other)))
 
     def __hash__(self):
         return int(self.x)
