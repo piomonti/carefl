@@ -28,9 +28,10 @@ class BivariateFlowLR:
         self.flow = None
         self.dim = None
 
+        self.opt_method = opt_method
         self.split = split
-        self.n_layers = n_layers
-        self.n_hidden = n_hidden
+        self.n_layers = n_layers if type(n_layers) is list else [n_layers]
+        self.n_hidden = n_hidden if type(n_hidden) is list else [n_hidden]
         self.prior_dist = prior_dist
         self.epochs = epochs
         self.device = device
@@ -84,7 +85,7 @@ class BivariateFlowLR:
                 # -------------------------------------------------------------------------------
                 torch.manual_seed(0)
                 flow_xy, _ = self._init_and_train_flow(x, nh, l, self.prior_dist, self.epochs, self.device,
-                                                       verbose=False)
+                                                       opt_method=self.opt_method, verbose=self.verbose)
                 score = np.nanmean(flow_xy.log_likelihood(x_test))
                 if score > best_results['x->y']['score']:
                     best_results['x->y']['score'] = score
@@ -98,7 +99,7 @@ class BivariateFlowLR:
                 # -------------------------------------------------------------------------------
                 torch.manual_seed(0)
                 flow_yx, _ = self._init_and_train_flow(x[:, [1, 0]], nh, l, self.prior_dist, self.epochs, self.device,
-                                                       verbose=False)
+                                                       opt_method=self.opt_method, verbose=self.verbose)
                 score = np.nanmean(flow_yx.log_likelihood(x_test[:, [1, 0]]))
                 if score > best_results['y->x']['score']:
                     best_results['y->x']['score'] = score
@@ -156,13 +157,13 @@ class BivariateFlowLR:
             loss_vals.append(loss_val)
         return flow, loss_vals
 
-    def fit_to_sem(self, data, n_layers, n_hidden):
+    def fit_to_sem(self, data, dag):
         """
         assuming data columns follow the causal ordering, we fit the associated SEM
         """
         self.dim = data.shape[1]
-        flow, _ = self._init_and_train_flow(data, n_layers, n_hidden,
-                                            self.prior_dist, self.epochs, self.device, verbose=self.verbose)
+        flow, _ = self._init_and_train_flow(data, self.n_layers[0], self.n_hidden[0], self.prior_dist,
+                                            self.epochs, self.device, verbose=self.verbose, opt_method=self.opt_method)
         self.flow = flow
 
     def invert_flow(self, data):
