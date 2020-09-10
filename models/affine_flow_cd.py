@@ -151,13 +151,17 @@ class BivariateFlowLR:
 
         return p, best_results, results
 
-    def fit_to_sem(self, data, dag):
+    def fit_to_sem(self, data, dag, seed=0):
         """
         assuming data columns follow the causal ordering, we fit the associated SEM
         """
+        loss_vals = [np.nan]
         self.dim = data.shape[1]
-        flow, _ = init_and_train_flow(data, self.n_layers[0], self.n_hidden[0], self.prior_dist,
-                                      self.epochs, self.device, verbose=self.verbose, opt_method=self.opt_method)
+        torch.manual_seed(seed)
+        while np.nan in loss_vals:
+            flow, loss_vals = init_and_train_flow(data, self.n_layers[0], self.n_hidden[0], self.prior_dist,
+                                                  self.epochs, self.device, verbose=self.verbose,
+                                                  opt_method=self.opt_method)
         self.flow = flow
 
     def invert_flow(self, data):

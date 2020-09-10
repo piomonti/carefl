@@ -48,7 +48,7 @@ def intervention4d_mse(results_dir=''):
         for model in models:
             print("fitting a {} model".format(model))
             # fit to an affine autoregressive flow or ANM with gp/linear functions
-            mod = BivariateFlowLR(n_layers=5, n_hidden=10, epochs=500,
+            mod = BivariateFlowLR(n_layers=5, n_hidden=10, epochs=750,
                                   opt_method='scheduling') if model == 'flow' else ANM(method=model)
 
             mod.fit_to_sem(dat, dag)

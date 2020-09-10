@@ -142,7 +142,7 @@ if __name__ == '__main__':
     if args.intervention:
         # Run proposed method to perform interventions on the toy example described in the manuscript
         print('running interventions on toy example')
-        intervention(dim=4, results_dir=args.resultsDir)
+        # intervention(dim=4, results_dir=args.resultsDir)
         intervention4d_mse(results_dir=args.resultsDir)
 
     if args.counterfactual:
