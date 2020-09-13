@@ -178,7 +178,7 @@ class ANM:
         regs = {}
         for u, v in parents.items():
             Reg = self._get_regressor()
-            reg = Reg.fit(data[:, v], data[:, u.x])
+            reg = Reg.fit(data[:, v], data[:, u])
             regs[u] = reg
         self.dag = dag
         self.parents = parents
@@ -214,19 +214,20 @@ def sorted_roots_effects_from_dag(dag):
     roots + sorted_effects together contain all variables sorted according to the SEM
     """
     parents = {}
-    # for each variable x_i, get its parents in the dag
+    # for each variable x_i, get its parents in the dag (dag_ij != 0)
     for u, v in zip(*np.where(dag != 0)):
         if u not in parents.keys():
-            parents[DicIdx(u)] = []
+            parents[DictIdx(u)] = []
         parents[u].append(v)
     for u in parents.keys():
         u.set_dict(parents)
     roots = [u for u in np.arange(dag.shape[0]) if u not in parents.keys()]
-    sorted_effects = [i.x for i in sorted(parents)]
+    sorted_effects = [u.x for u in sorted(parents)]
+    parents = {u.x: v for u, v in parents.items()}
     return parents, roots, sorted_effects
 
 
-class DicIdx:
+class DictIdx:
     """an int that represents a dictionary index, where __lt__ function uses the dictionary values for comparison"""
 
     def __init__(self, x, dic=None):
@@ -242,7 +243,7 @@ class DicIdx:
     def __eq__(self, other):
         if type(other) in [float, int, np.int64, np.int_]:
             return self.x == other
-        elif type(other) == DicIdx:
+        elif type(other) == DictIdx:
             return self.x == other.x
         else:
             raise TypeError("Can't compare to {} of type {}".format(other, type(other)))
