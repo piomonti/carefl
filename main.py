@@ -17,6 +17,7 @@ def parse_input():
     parser.add_argument('--config', type=str, default='simulations.yaml', help='config file to use')
     parser.add_argument('--n-sims', type=int, default=250, help='Number of synthetic simulations to run')
     parser.add_argument('--run', type=str, default='results', help='Path for saving results.')
+    parser.add_argument('--seed', type=int, default=0, help='random seed')
 
     parser.add_argument('-s', '--simulation', action='store_true', help='run the CD exp on synthetic data')
     parser.add_argument('-p', '--pairs', action='store_true', help='Run Cause Effect Pairs experiments')
@@ -24,11 +25,8 @@ def parse_input():
     parser.add_argument('-c', '--counterfactual', action='store_true', help='run counterfactual exp on toy example')
 
     # params to overwrite config file. useful for batch running in slurm
-    parser.add_argument('--causal-mech', type=str, default=None,
-                        help='Dataset to run synthetic CD experiments on. Should be either linear, '
-                             'hoyer2009 or nueralnet_l1 or all to run all')
+    parser.add_argument('-m', '--causal-mech', type=str, default=None, help='Dataset to run synthetic experiments on.')
     parser.add_argument('-a', '--algorithm', type=str, default=None, help='algorithm to run')
-    parser.add_argument('--seed', type=int, default=-1, help='random seed for flow')
     parser.add_argument('-n', '--n-points', type=int, default=0, help='number of simulated data points')
 
     return parser.parse_args()
@@ -41,8 +39,7 @@ def debug_options(args, config):
         config.algorithm = args.algorithm
     if args.n_points != 0:
         config.data.n_points = args.n_points
-    if args.seed  != -1:
-        config.training.seed = args.seed
+
 
 
 def dict2namespace(config):
