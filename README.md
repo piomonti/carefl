@@ -68,3 +68,27 @@ This project was tested with the following versions:
 
 This project uses normalizing flows implementations from [this](https://github.com/karpathy/pytorch-normalizing-flows) library. 
 
+### Slurm usage
+
+To run simulations in parallel:
+```bash
+for SIZE in 25 50 75 100 150 250 500; do
+    for ALGO in CAReFl LRHyv notears RECI ANM; do
+        for DSET in linear hoyer2009 nueralnet_l1; do
+            sbatch slurm_main.sbatch -s --config simulations.yaml -m $DSET -a $ALGO -n $SIZE
+        done
+    done
+done
+
+```
+___
+
+To run interventions in parallel:
+```bash
+for SIZE in 500 750 1000 1250 1500 2000 2500; do
+    for ALGO in carefl gp linear; do
+        sbatch slurm_main.sbatch -i --config interventions.yaml -a $ALGO -n $SIZE
+    done
+done
+
+```
