@@ -1,0 +1,40 @@
+algorithm: 'CAReFl'  # in {'CAReFl', 'LRHyv', 'notears', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
+
+data:
+  causal_mech: 'linear'  # in {linear, hoyer2009, nueralnet_l1}
+  n_points: 250
+  seed: 0
+  # only relevant for interventions
+  random: false
+  expected: false
+
+
+# only relevant for flows
+flow:
+  architecture: 'CL'
+  net_class: 'MLP'  # in {'MLP', 'ARMLP', 'CONV'}.lower()
+  nl: [1, 3]
+  nh: 5
+  batch_norm: false
+  prior_dist: 'laplace'
+  # for CL
+  scale_base: true
+  shift_base: true
+
+
+training:
+  epochs: 750
+  verbose: true
+  split: .8
+  seed: 0
+
+
+optim:
+  weight_decay: 0.000
+  optimizer: "Adam"
+  lr: 0.001
+  beta1: 0.9
+  amsgrad: false
+  scheduler: true
+
+
