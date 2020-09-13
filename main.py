@@ -28,8 +28,8 @@ def parse_input():
                         help='Dataset to run synthetic CD experiments on. Should be either linear, '
                              'hoyer2009 or nueralnet_l1 or all to run all')
     parser.add_argument('-a', '--algorithm', type=str, default=None, help='algorithm to run')
-    parser.add_argument('--seed', type=int, default=None, help='random seed for flow')
-    parser.add_argument('-n', '--n-points', type=int, default=None, help='number of simulated data points')
+    parser.add_argument('--seed', type=int, default=-1, help='random seed for flow')
+    parser.add_argument('-n', '--n-points', type=int, default=0, help='number of simulated data points')
 
     return parser.parse_args()
 
@@ -39,9 +39,9 @@ def debug_options(args, config):
         config.data.causal_mech = args.causal_mech
     if args.algorithm is not None:
         config.algorithm = args.algorithm
-    if args.n_points is not None:
+    if args.n_points != 0:
         config.data.n_points = args.n_points
-    if args.seed is not None:
+    if args.seed  != -1:
         config.training.seed = args.seed
 
 
