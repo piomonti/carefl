@@ -5,18 +5,13 @@
 import os
 
 import numpy as np
-# load data generating code:
 import pylab as plt
 import seaborn as sns
 
-# load flows
-from models.affine_flow_cd import BivariateFlowLR
+from models.carefl import CAReFl
 
 
-# plt.ion()
-
-
-def counterfactuals(results_dir=''):
+def counterfactuals(args, config):
     # we generate the same SEM as in the intervention example
 
     nObs = 2500
@@ -38,8 +33,8 @@ def counterfactuals(results_dir=''):
 
     dat = np.vstack((X_0, X_1, X_2, X_3)).T
 
-    mod = BivariateFlowLR(n_layers=None, n_hidden=None, prior_dist='laplace', epochs=500, opt_method='scheduling')
-    mod.fit_to_sem(dat, n_layers=5, n_hidden=10)
+    mod = CAReFl(config)
+    mod.fit_to_sem(dat, dag=None)
 
     ### now we run some CF trials:
     # generate latent disturbances:
@@ -111,4 +106,4 @@ def counterfactuals(results_dir=''):
 
     plt.tight_layout()
     plt.subplots_adjust(top=0.925)
-    plt.savefig(os.path.join(results_dir, 'counterfactuals_4d.pdf'), dpi=300)
+    plt.savefig(os.path.join(args.run, 'counterfactuals_4d.pdf'), dpi=300)

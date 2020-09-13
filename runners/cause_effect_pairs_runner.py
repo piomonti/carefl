@@ -2,20 +2,15 @@ import numpy as np
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.preprocessing import scale
 
-# load flows
-from models.affine_flow_cd import BivariateFlowLR
+from models.carefl import CAReFl
 
 PairDataDir = 'data/pairs/'
 
 
-def run_single_pair(pair_id, Nlayers, Nhidden, priorDist='laplace', TrainSplit=1., epochs=100, optMethod='adam',
-                    removeOutliers=False, scaleDat=True, verbose=False):
+def run_single_pair(config, pair_id, remove_outliers=False, scale_dat=True, verbose=False):
     """
     run cause effect discovery for given pair id
     """
-
-    # check input
-    assert priorDist in ['laplace', 'uniform']
 
     # polish format of pair_id
     pair_id = str(pair_id)
@@ -32,64 +27,53 @@ def run_single_pair(pair_id, Nlayers, Nhidden, priorDist='laplace', TrainSplit=1
     elif ('y-->x' in dir_id) | ('y->x' in dir_id) | ('x<-y' in dir_id):
         dir_id = 'y-->x'
 
-    if removeOutliers:
+    if remove_outliers:
         print('removing outliers')
         clf = LocalOutlierFactor(n_neighbors=20, contamination=0.05)
         y_pred = clf.fit_predict(dat_id)
-        dat_id = dat_id[np.where(y_pred == 1)[0],]
+        dat_id = dat_id[np.where(y_pred == 1)[0]]
 
     # scale data:
-    if scaleDat:
+    if scale_dat:
         dat_id = scale(dat_id)
     #   dat_id = MinMaxScaler().fit_transform( dat_id )
 
     if verbose:
         print('Running experiments for CE Pair: ' + pair_id + ' with n=' + str(dat_id.shape[0]) + ' samples')
         print('True causal direction: ' + dir_id)
-        print('baseline dist: ' + priorDist)
+        print('baseline dist: ' + config.flow.prior_dist)
 
-    model = BivariateFlowLR(Nhidden, Nlayers, TrainSplit, priorDist, epochs, opt_method=optMethod, verbose=verbose)
-    p, _, results = model.fit_flows(dat_id)
-    predModel = model.direction
-    return results, predModel, dir_id, np.minimum(np.unique(dat_id[:, 0]).shape[0] / float(dat_id.shape[0]),
-                                                  np.unique(dat_id[:, 1]).shape[0] / float(dat_id.shape[0]))
+    model = CAReFl(config)
+    p, _, results = model.flow_lr(dat_id)
+    pred_model = model.direction
+    return results, pred_model, dir_id, np.minimum(np.unique(dat_id[:, 0]).shape[0] / float(dat_id.shape[0]),
+                                                   np.unique(dat_id[:, 1]).shape[0] / float(dat_id.shape[0]))
 
 
-def RunCauseEffectPairs():
+def run_cause_effect_pairs(args, config):
     # define some simulation parameters
-    skipPairs = [52, 54, 55]
+    skip_pairs = [52, 54, 55]
     # skip these pairs, as indicated by Mooij et al (2016) because the variables
     # are not bivariate (i.e., X and Y are not univariate)
-
-    SplitPerc = .8
-    scaleDat = True
-    priorDist = 'laplace'
-    epochs = 500 + 250
-    optMethod = 'schedule'
-    correctCount = 0
-    runningCount = 0
-    BinaryCutoff = .15
-    correctCount_nobinary = 0
-    runningCount_nobinary = 0
-    LayerList = [1, 3]
-    depthList = [5]
-
+    correct_count = 0
+    running_count = 0
+    binary_cutoff = .15
+    correct_count_nobinary = 0
+    running_count_nobinary = 0
     for i in range(1, 108):
-        if i in skipPairs:
+        if i in skip_pairs:
             pass
         else:
-            res, predModel, trueModel, ctsRatio = run_single_pair(i, LayerList, depthList, priorDist=priorDist,
-                                                                  TrainSplit=SplitPerc, epochs=epochs,
-                                                                  optMethod=optMethod,
-                                                                  scaleDat=scaleDat, verbose=True)
+            res, pred_model, true_model, cts_ratio = run_single_pair(config, i, remove_outliers=False, scale_dat=True,
+                                                                     verbose=True)
 
-            runningCount += 1
-            if ctsRatio > BinaryCutoff:
-                runningCount_nobinary += 1
-            if predModel.replace('-', '') == trueModel.replace('-', ''):
+            running_count += 1
+            if cts_ratio > binary_cutoff:
+                running_count_nobinary += 1
+            if pred_model.replace('-', '') == true_model.replace('-', ''):
                 print('Correct!')
-                correctCount += 1
-                if ctsRatio > BinaryCutoff:
-                    correctCount_nobinary += 1
+                correct_count += 1
+                if cts_ratio > binary_cutoff:
+                    correct_count_nobinary += 1
             # TODO: is correctrCount_nobinary important?
-            print('running mean: ' + str(float(correctCount) / runningCount))
+            print('running mean: ' + str(float(correct_count) / running_count))

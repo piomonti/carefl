@@ -2,101 +2,120 @@
 #
 #
 
-import os
-
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import pickle
 import seaborn as sns
 
-# load data generating code:
 from data.generate_synth_data import gen_synth_causal_dat
-# load flows
-from models import ANM, BivariateFlowLR
+from models import ANM, CAReFl
 
 
 def intervention_sem(n_obs, dim=4, seed=0, random=True):
     if dim == 4:
         # generate some 4D data according to the following SEM
         #
-        # X_0 = N_0
         # X_1 = N_1
-        # X_2 = X_0 + c_0*X_1^3 + N_2   -  c_0 random coeff
-        # X_3 = c_1*X_0^2 - X_1 + N_3   -  c_1 random coeff
+        # X_2 = N_2
+        # X_3 = X_1 + c_0*X_2^3 + N_3   -  c_0 random coeff
+        # X_4 = c_1*X_1^2 - X_2 + N_4   -  c_1 random coeff
         np.random.seed(seed)
         # causes
-        X_0 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
         X_1 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        X_2 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
         # effects
         coeffs = np.random.uniform(.1, .9, 2) if random else [.5, .5]
-        X_2 = X_0 + coeffs[0] * (X_1 * X_1 * X_1) + np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
-        X_3 = -X_1 + coeffs[1] * (X_0 * X_0) + np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        X_3 = X_1 + coeffs[0] * (X_2 * X_2 * X_2) + np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        X_4 = -X_2 + coeffs[1] * (X_1 * X_1) + np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
         # create the adjacency matrix
         dag = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0]])
-        return np.vstack((X_0, X_1, X_2, X_3)).T, coeffs, dag
+        return np.vstack((X_1, X_2, X_3, X_4)).T, coeffs, dag
     else:
         raise NotImplementedError('will be implemented soon')
 
 
-def intervention4d_mse(results_dir=''):
-    n_obs_list = [250, 500, 1000, 1500, 2000, 2500, 5000]
-    models = ['flow', 'gp', 'linear']
-    results = {mod: {"x2": [], "x3": [], "x2e": [], "x3e": []} for mod in models}
-    for n_obs in n_obs_list:
-        print("** {} observations **".format(n_obs))
-        # generate coeffcients for equation (12), and data from that SEM
-        dat, coeffs, dag = intervention_sem(n_obs, dim=4, seed=0, random=False)
-        for model in models:
-            print("fitting a {} model".format(model))
-            # fit to an affine autoregressive flow or ANM with gp/linear functions
-            mod = BivariateFlowLR(n_layers=5, n_hidden=10, epochs=750,
-                                  opt_method='scheduling') if model == 'flow' else ANM(method=model)
+def run_interventions(args, config):
+    results = {"x3": [], "x4": [], "x3e": [], "x4e": []}
+    n_obs = args.data.n_points
+    model = config.algorithm.lower()
 
-            mod.fit_to_sem(dat, dag)
-            # intervene on x_0 and get a sample of {x | do(x_0=a)} for a in [-3, 3]
-            avals = np.arange(-3, 3, .1)
-            x_int_sample = []
-            x_int_exp = []
-            for a in avals:
-                res = mod.predict_intervention(a, n_samples=20, iidx=0)
-                x_int_sample.append(res[0].mean(axis=0))
-                x_int_exp.append(res[1].mean(axis=0))
-            x_int_sample = np.array(x_int_sample)
-            x_int_exp = np.array(x_int_exp)
-            # compute the MSE between the true E[x_2|x_0=a] to the empirical expectation from the sample
-            # we know that the true E[x_2|x_0=a] = a
-            mse_x2 = np.mean((x_int_sample[:, 2] - avals) ** 2)
-            mse_x2e = np.mean((x_int_exp[:, 2] - avals) ** 2)
-            # do the same for x_3; true E[x_3|x_0=a] = c_1*a^2
-            mse_x3 = np.mean((x_int_sample[:, 3] - coeffs[1] * avals * avals) ** 2)
-            mse_x3e = np.mean((x_int_exp[:, 3] - coeffs[1] * avals * avals) ** 2)
-            # store results
-            results[model]["x2"].append(mse_x2)
-            results[model]["x3"].append(mse_x3)
-            results[model]["x2e"].append(mse_x2e)
-            results[model]["x3e"].append(mse_x3e)
+    print("** {} observations **".format(n_obs))
+    # generate coeffcients for equation (12), and data from that SEM
+    dat, coeffs, dag = intervention_sem(n_obs, dim=4, seed=config.data.seed, random=config.data.random)
 
+    print("fitting a {} model".format(model))
+    # fit to an affine autoregressive flow or ANM with gp/linear functions
+    # mod = CAReFl(n_layers=5, n_hidden=10, epochs=750, opt_method='scheduling') if model == 'flow' else ANM(method=model)
+    mod = CAReFl(config) if model == 'carefl' else ANM(method=model)
+
+    mod.fit_to_sem(dat, dag)
+    # intervene on X_1 and get a sample of {x | do(X_1=a)} for a in [-3, 3]
+    avals = np.arange(-3, 3, .1)
+    x_int_sample = []
+    x_int_exp = []
+    for a in avals:
+        res = mod.predict_intervention(a, n_samples=20, iidx=0)
+        x_int_sample.append(res[0].mean(axis=0))
+        x_int_exp.append(res[1].mean(axis=0))
+    x_int_sample = np.array(x_int_sample)
+    x_int_exp = np.array(x_int_exp)
+    # compute the MSE between the true E[x_2|x_0=a] to the empirical expectation from the sample
+    # we know that the true E[x_2|x_0=a] = a
+    mse_x3 = np.mean((x_int_sample[:, 2] - avals) ** 2)
+    mse_x3e = np.mean((x_int_exp[:, 2] - avals) ** 2)
+    # do the same for x_3; true E[x_3|x_0=a] = c_1*a^2
+    mse_x4 = np.mean((x_int_sample[:, 3] - coeffs[1] * avals * avals) ** 2)
+    mse_x4e = np.mean((x_int_exp[:, 3] - coeffs[1] * avals * avals) ** 2)
+    # store results
+    results["x3"].append(mse_x3)
+    results["x4"].append(mse_x4)
+    results["x3e"].append(mse_x3e)
+    results["x4e"].append(mse_x4e)
+
+    pickle.dump(results, open(os.path.join(args.output, "int_{}{}.p".format(n_obs, 'r' * config.data.random)), 'wb'))
+
+
+def plot_interventions(args, config):
     # plot the MSEs
+    n_obs_list = [250, 500, 1000, 1500, 2000, 2500, 5000]
+    models = ['carefl', 'gp', 'linear']
+    to_models = lambda s: 'carefl' if 'carefl' in s else s
+    results = {mod: None for mod in models}
+
+    for a in args.int_list:
+        for n in n_obs_list:
+            res = pickle.load(
+                open(os.path.join(args.run, args.doc, a, "int_{}{}.p".format(n, 'r' * config.data.random)), 'rb'))
+            results[to_models(a)] = res
+
     sns.set_style("whitegrid")
     sns.set_palette(sns.color_palette("muted", 8))
     plt.figure()
     for i, mod in enumerate(models):
         # plot E[X_3|do(X_1=a)]
-        plt.plot(n_obs_list, results[mod]["x2"], label=r'$X_3$ from samples', linestyle='-',
-                 color=sns.color_palette("muted", 8)[2 * i], linewidth=2, alpha=.8)
-        plt.plot(n_obs_list, results[mod]["x2e"], label=r'$X_3$ from expectation', linestyle='-.',
-                 color=sns.color_palette("muted", 8)[2 * i], linewidth=2, alpha=.8)
+        if config.data.expected:
+            plt.plot(n_obs_list, results[mod]["x3e"], label=r'$X_3$ - {}'.format(mod), linestyle='-.',
+                     color=sns.color_palette("muted", 8)[2 * i], linewidth=2, alpha=.8)
+        else:
+            plt.plot(n_obs_list, results[mod]["x3"], label=r'$X_3$ - {}'.format(mod), linestyle='-',
+                     color=sns.color_palette("muted", 8)[2 * i], linewidth=2, alpha=.8)
         # plot E[X_4|do(X_1=a)]
-        plt.plot(n_obs_list, results[mod]["x3"], label=r'$X_4$ from samples', linestyle='-',
-                 color=sns.color_palette("muted", 8)[2 * i + 1], linewidth=2, alpha=.8)
-        plt.plot(n_obs_list, results[mod]["x3e"], label=r'$X_4$ from expectation', linestyle='-.',
-                 color=sns.color_palette("muted", 8)[2 * i + 1], linewidth=2, alpha=.8)
+        if config.data.expected:
+            plt.plot(n_obs_list, results[mod]["x4e"], label=r'$X_4$ - {}'.format(mod), linestyle='-.',
+                     color=sns.color_palette("muted", 8)[2 * i + 1], linewidth=2, alpha=.8)
+        else:
+            plt.plot(n_obs_list, results[mod]["x4"], label=r'$X_4$ - {}'.format(mod), linestyle='-',
+                     color=sns.color_palette("muted", 8)[2 * i + 1], linewidth=2, alpha=.8)
     plt.xlabel(r'Sample size', fontsize=12)
     plt.ylabel(r'MSE', fontsize=12)
     plt.legend()
-    plt.savefig(os.path.join(results_dir, 'intervention_mse.pdf'), dpi=300)
+    plt.savefig(os.path.join(args.run,
+                             'intervention_mse_{}{}.pdf'.format('r' * config.data.random, 'e' * config.data.expected)),
+                dpi=300)
 
 
-def intervention(dim=4, results_dir=''):
+def intervention(args, config, dim=4):
     if dim == 4:
         # higher D examples
         n_obs = 2500
@@ -106,7 +125,7 @@ def intervention(dim=4, results_dir=''):
         plt.scatter(dat[:, 1], dat[:, 2])
         plt.scatter(dat[:, 0], dat[:, 3])
 
-        mod = BivariateFlowLR(n_layers=5, n_hidden=10, prior_dist='laplace', epochs=500, opt_method='scheduling')
+        mod = CAReFl(config)
         mod.fit_to_sem(dat, dag)
 
         # -----
@@ -134,7 +153,7 @@ def intervention(dim=4, results_dir=''):
         plt.xlabel(r'Value of interventional variable, $X_1=\alpha$', fontsize=12)
         plt.ylabel(r'Predicted value of $X_3$ or $X_4$', fontsize=12)
         plt.title(r'interventional predictions under $do(X_1=\alpha)$', fontsize=15)
-        plt.savefig(os.path.join(results_dir, 'intervention_4d_1.pdf'), dpi=300)
+        plt.savefig(os.path.join(args.run, 'intervention_4d_1.pdf'), dpi=300)
 
         # -----
 
@@ -163,7 +182,7 @@ def intervention(dim=4, results_dir=''):
 
         plt.tight_layout()
         plt.subplots_adjust(top=0.95)
-        plt.savefig(os.path.join(results_dir, 'intervention_4d_2.pdf'), dpi=300)
+        plt.savefig(os.path.join(args.run, 'intervention_4d_2.pdf'), dpi=300)
 
         # -----
 
@@ -181,7 +200,7 @@ def intervention(dim=4, results_dir=''):
                       xvals]),
                  linewidth=3, linestyle='-.', label=r'$X_4| do(X_1=x)$')
         plt.legend()
-        plt.savefig(os.path.join(results_dir, 'intervention_4d_3.pdf'), dpi=300)
+        plt.savefig(os.path.join(args.run, 'intervention_4d_3.pdf'), dpi=300)
 
         # -----
 
@@ -190,19 +209,19 @@ def intervention(dim=4, results_dir=''):
         plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=100)[0][0, 3] for x in xvals]),
                  linewidth=3, linestyle='-.', label=r'$X_4| do(X_0=x)$', color='red')
         plt.legend()
-        plt.savefig(os.path.join(results_dir, 'intervention_4d_4.pdf'), dpi=300)
+        plt.savefig(os.path.join(args.run, 'intervention_4d_4.pdf'), dpi=300)
 
         # below are checks to ensure flow is autoregressive
         # input_ = np.ones((1,4))
-        # print(mod.invert_flow( input_ ))
+        # print(mod._forward_flow( input_ ))
         # input_[0,0] = 2
-        # print(mod.invert_flow( input_ ))
+        # print(mod._forward_flow( input_ ))
         # input_[0,1] = 2
-        # print(mod.invert_flow( input_ ))
+        # print(mod._forward_flow( input_ ))
         # input_[0,2] = 2
-        # print(mod.invert_flow( input_ ))
+        # print(mod._forward_flow( input_ ))
         # input_[0,3] = 2
-        # print(mod.invert_flow( input_ ))
+        # print(mod._forward_flow( input_ ))
 
     elif dim == 2:
         # generate toy data:
@@ -217,7 +236,7 @@ def intervention(dim=4, results_dir=''):
         true_mod = lambda x: (x + (.5) * x * x * x) / vars_[1]
 
         # define and fit flow model:
-        mod = BivariateFlowLR(n_layers=5, n_hidden=10, prior_dist='laplace', epochs=500, opt_method='scheduling')
+        mod = CAReFl(config)
         mod.fit_to_sem(dat, None)
 
         # plot data distribution:
@@ -229,7 +248,7 @@ def intervention(dim=4, results_dir=''):
         plt.plot(xvals, true_mod(xvals), color='red', linewidth=3, linestyle=':')
         plt.plot(xvals, np.array([mod.predict_intervention(x0_val=x, n_samples=500)[1] for x in xvals]), color='green',
                  linewidth=3, linestyle='-.')
-        plt.savefig(os.path.join(results_dir, 'intervention_2d.pdf'), dpi=300)
+        plt.savefig(os.path.join(args.run, 'intervention_2d.pdf'), dpi=300)
 
         # plt.figure()
         # x0val = 1.5

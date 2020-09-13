@@ -18,22 +18,19 @@ from nflib import AffineCL, NormalizingFlowModel, MLP1layer, MAF, NSF_AR, ARMLP
 class CAReFl:
     def __init__(self, config):
         self.config = config
-
-        # initial guess on correct model:
-        self.direction = 'none'  # to be updated after each fit
-        self.flow_xy = None
-        self.flow_yx = None
-        self.flow = None
-        self.dim = None
-
-        self.config = config
         self.n_layers = config.flow.nl
         self.n_hidden = config.flow.nh
         self.epochs = config.training.epochs
         self.device = config.device
         self.verbose = config.training.verbose
 
-    def _get_optimizier(self, parameters):
+        # initial guess on correct model:
+        self.dim = None
+        self.direction = 'none'  # to be updated after each fit
+        self.flow_xy = self.flow_yx = self.flow = None
+        self._nhxy = self._nhyx = self._nlxy = self._nlyx = None
+
+    def _get_optimizer(self, parameters):
 
         optimizer = optim.Adam(parameters, lr=self.config.optim.lr, weight_decay=self.config.optim.weight_decay,
                                betas=(self.config.optim.beta1, 0.999), amsgrad=self.config.optim.amsgrad)
@@ -85,7 +82,7 @@ class CAReFl:
         flows = self._get_flow_arch(dim)
         all_loss_vals = []
         for flow in flows:
-            optimizer, scheduler = self._get_optimizier(flow.parameters())
+            optimizer, scheduler = self._get_optimizer(flow.parameters())
             flow.train()
             loss_vals = []
             for e in range(self.epochs):
@@ -172,7 +169,7 @@ class CAReFl:
         self.dim = data.shape[1]
         torch.manual_seed(self.config.training.seed)
         flows, _ = self._train(data)
-        self.flow = self._evaluate(flows, data)[0]
+        self.flow, _, self._nlxy, self._nhxy = self._evaluate(flows, data)
 
     def predict_intervention(self, x0_val, n_samples=100, iidx=0):
         """
