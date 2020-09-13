@@ -37,7 +37,7 @@ def intervention_sem(n_obs, dim=4, seed=0, random=True):
 
 def run_interventions(args, config):
     results = {"x3": [], "x4": [], "x3e": [], "x4e": []}
-    n_obs = args.data.n_points
+    n_obs = config.data.n_points
     model = config.algorithm.lower()
 
     print("** {} observations **".format(n_obs))

@@ -107,9 +107,10 @@ class CAReFl:
         return flows, all_loss_vals
 
     def _evaluate(self, flows, data):
-        best_score, best_flow, nl, nh = -1e-60, None, 0, 0
+        best_score, best_flow, nl, nh = -1e60, flows[0], 0, 0
         for idx, flow in enumerate(flows):
             score = np.nanmean(flow.log_likelihood(torch.tensor(data.astype(np.float32)).to(self.device)))
+            print(score)
             if score > best_score:
                 best_flow = flow
                 best_score = score
