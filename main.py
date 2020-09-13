@@ -14,6 +14,7 @@ from runners.simulation_runner import run_simulations, plot_simulations
 
 def parse_input():
     parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--config', type=str, default='simulations.yaml', help='config file to use')
     parser.add_argument('--n-sims', type=int, default=250, help='Number of synthetic simulations to run')
     parser.add_argument('--run', type=str, default='results', help='Path for saving results.')
 
