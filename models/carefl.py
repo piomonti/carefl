@@ -109,7 +109,7 @@ class CAReFl:
     def _evaluate(self, flows, data):
         best_score, best_flow, nl, nh = -1e-60, None, 0, 0
         for idx, flow in enumerate(flows):
-            score = np.nanmean(flow.log_likelihood(data))
+            score = np.nanmean(flow.log_likelihood(torch.tensor(data.astype(np.float32)).to(self.device)))
             if score > best_score:
                 best_flow = flow
                 best_score = score
@@ -155,12 +155,12 @@ class CAReFl:
     def _forward_flow(self, data):
         if self.flow is None:
             raise ValueError('Model needs to be fitted first')
-        return self.flow.forward(torch.tensor(data.astype(np.float32)))[0][-1].detach().cpu().numpy()
+        return self.flow.forward(torch.tensor(data.astype(np.float32)).to(self.device))[0][-1].detach().cpu().numpy()
 
     def _backward_flow(self, latent):
         if self.flow is None:
             raise ValueError('Model needs to be fitted first')
-        return self.flow.backward(torch.tensor(latent.astype(np.float32)))[0][-1].detach().cpu().numpy()
+        return self.flow.backward(torch.tensor(latent.astype(np.float32)).to(self.device))[0][-1].detach().cpu().numpy()
 
     def fit_to_sem(self, data, dag):
         """
