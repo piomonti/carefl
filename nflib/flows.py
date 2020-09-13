@@ -20,7 +20,7 @@ Improved Variational Inference with Inverse Autoregressive Flow, Kingma et al Ju
 https://arxiv.org/abs/1606.04934
 (IAF)
 
-Masked Autoregressive Flow for Density Estimation, Papamakarios et al. May 2017 
+Masked Autoregressive Flow for Density Estimation, Papamakarios et al. May 2017
 https://arxiv.org/abs/1705.07057
 "The advantage of Real NVP compared to MAF and IAF is that it can both generate
 data and estimate densities with one forward pass only, whereas MAF would need D passes
@@ -44,7 +44,7 @@ from nflib.nets import LeafParam, MLP
 
 
 class AffineConstantFlow(nn.Module):
-    """ 
+    """
     Scales + Shifts the flow by (learned) constants per dimension.
     In NICE paper there is a Scaling layer which is a special case of this where t is None
     """
@@ -92,7 +92,7 @@ class ActNorm(AffineConstantFlow):
 
 class AffineCL(nn.Module):
     """
-    As seen in RealNVP, affine autoregressive flow (z = x * exp(s) + t), where half of the 
+    As seen in RealNVP, affine autoregressive flow (z = x * exp(s) + t), where half of the
     dimensions in x are linearly scaled/transfromed as a function of the other half.
     Which half is which is determined by the parity bit.
     - RealNVP both scales and shifts (default)
@@ -137,7 +137,7 @@ class AffineCL(nn.Module):
         return z, log_det
 
     def backward(self, z):
-        # note that backward pass is not used during training ! 
+        # note that backward pass is not used during training !
         # the code below is incorrect as it does not incorporate s_cond0 and t_cond0 above !
         # update: code has been amended and correctly working!
         if self.checkerboard:
@@ -260,7 +260,7 @@ class ARMLP(nn.Module):
 
 
 class SlowMAF(nn.Module):
-    """ 
+    """
     Masked Autoregressive Flow, slow version with explicit networks per dim
     """
 
@@ -330,14 +330,14 @@ class IAF(MAF):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         """
-        reverse the flow, giving an Inverse Autoregressive Flow (IAF) instead, 
+        reverse the flow, giving an Inverse Autoregressive Flow (IAF) instead,
         where sampling will be fast but density estimation slow
         """
         self.forward, self.backward = self.backward, self.forward
 
 
 class Invertible1x1Conv(nn.Module):
-    """ 
+    """
     As introduced in Glow paper.
     """
 
@@ -383,7 +383,7 @@ class NormalizingFlow(nn.Module):
 
     def forward(self, x):
         m, _ = x.shape
-        log_det = torch.zeros(m)
+        log_det = torch.zeros(m).to(x.device)
         zs = [x]
         for flow in self.flows:
             x, ld = flow.forward(x)
@@ -393,7 +393,7 @@ class NormalizingFlow(nn.Module):
 
     def backward(self, z):
         m, _ = z.shape
-        log_det = torch.zeros(m)
+        log_det = torch.zeros(m).to(z.device)
         xs = [z]
         for flow in self.flows[::-1]:
             z, ld = flow.backward(z)
@@ -433,19 +433,19 @@ class NormalizingFlowModel(nn.Module):
 # class ClassCondNormalizingFlowModel(nn.Module):
 #     """
 
-#     A normalizing flow that also takes classes as inputs 
+#     A normalizing flow that also takes classes as inputs
 
-#     This is a special architecture in an attempt to solve nonlinear ICA 
+#     This is a special architecture in an attempt to solve nonlinear ICA
 #     via maximum likelihood.
 
-#     As such, we assume data is generated as a smooth invertible mixture, f, of 
-#     latent variables s. Further, we assume latent variables follow a piecewise 
+#     As such, we assume data is generated as a smooth invertible mixture, f, of
+#     latent variables s. Further, we assume latent variables follow a piecewise
 #     stationary distribution (see Hyvarinen & Morioka, 2016 or Khemakhem et al 2020 for details)
 
 #     The flow will be composed of two parts:
-#      - the first, will seek to invert the nonlinear mixing (ie to 
+#      - the first, will seek to invert the nonlinear mixing (ie to
 #        compute g = f^{-1})
-#      - the second to estimate the exponential family parameters associated 
+#      - the second to estimate the exponential family parameters associated
 #        with each segment (the Lambdas in the above papers)
 
 #     This essentially means each segment will have a distinct prior distribution (I think!)

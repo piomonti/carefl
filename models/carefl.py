@@ -43,9 +43,9 @@ class CAReFl:
     def _get_flow_arch(self, dim):
         # prior
         if self.config.flow.prior_dist == 'laplace':
-            prior = Laplace(torch.zeros(dim), torch.ones(dim))
+            prior = Laplace(torch.zeros(dim).to(self.device), torch.ones(dim).to(self.device))
         else:
-            prior = TransformedDistribution(Uniform(torch.zeros(dim), torch.ones(dim)), SigmoidTransform().inv)
+            prior = TransformedDistribution(Uniform(torch.zeros(dim).to(self.device), torch.ones(dim).to(self.device)), SigmoidTransform().inv)
         # flow type
         if self.config.flow.architecture.lower() in ['cl', 'realnvp']:
             affine_flow = AffineCL
@@ -88,7 +88,7 @@ class CAReFl:
             for e in range(self.epochs):
                 loss_val = 0
                 for _, x in enumerate(train_loader):
-                    x.to(self.device)
+                    x = x.to(self.device)
                     # compute loss
                     _, prior_logprob, log_det = flow(x)
                     loss = - torch.sum(prior_logprob + log_det)
