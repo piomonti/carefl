@@ -18,6 +18,8 @@ def parse_input():
     parser.add_argument('--n-sims', type=int, default=250, help='Number of synthetic simulations to run')
     parser.add_argument('--run', type=str, default='results', help='Path for saving results.')
     parser.add_argument('--seed', type=int, default=0, help='random seed')
+    parser.add_argument('--plot', action='store_true', help='plot experiments')
+
 
     parser.add_argument('-s', '--simulation', action='store_true', help='run the CD exp on synthetic data')
     parser.add_argument('-p', '--pairs', action='store_true', help='Run Cause Effect Pairs experiments')
@@ -86,9 +88,10 @@ def main():
         if not args.plot:
             # run algorithm on simulated data
             # and save the results as pickle files which can be used later to plot Fig 1.
-            print('Running {} on {} synthetic experiments ({} simulations)'.format(config.architecture,
+            print('Running {} on {} synthetic experiments ({} simulations - {} points)'.format(config.algorithm,
                                                                                    config.data.causal_mech,
-                                                                                   args.n_sims))
+                                                                                   args.n_sims,
+                                                                                   config.data.n_points))
             run_simulations(args, config)
         else:
             plot_simulations(args, config)

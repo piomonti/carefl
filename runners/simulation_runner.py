@@ -43,7 +43,7 @@ def run_simulations(args, config):
         results['p'].append(p)
         results['c'].append(1. * (direction == mod_dir))
     results['correct'] = per_correct / n_sims
-    pickle.dump(results, open(os.path.join(args.output, "sim_{}.p".format(n_points), 'wb')))
+    pickle.dump(results, open(os.path.join(args.output, "sim_{}.p".format(n_points)), 'wb'))
 
 
 def plot_simulations(args, config):
