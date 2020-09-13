@@ -22,7 +22,9 @@ https://arxiv.org/abs/1606.04934
 
 Masked Autoregressive Flow for Density Estimation, Papamakarios et al. May 2017 
 https://arxiv.org/abs/1705.07057
-"The advantage of Real NVP compared to MAF and IAF is that it can both generate data and estimate densities with one forward pass only, whereas MAF would need D passes to generate data and IAF would need D passes to estimate densities."
+"The advantage of Real NVP compared to MAF and IAF is that it can both generate
+data and estimate densities with one forward pass only, whereas MAF would need D passes
+to generate data and IAF would need D passes to estimate densities."
 (MAF)
 
 Glow: Generative Flow with Invertible 1x1 Convolutions, Kingma and Dhariwal, Jul 2018
@@ -95,7 +97,7 @@ class AffineCL(nn.Module):
     Which half is which is determined by the parity bit.
     - RealNVP both scales and shifts (default)
     - NICE only shifts
-    - our implemention also allows for unconditional scaling and shifting the non-transformed variables
+    - our implementation also allows for unconditional scaling and shifting of the non-transformed half
     """
 
     def __init__(self, dim, parity=False, net_class=MLP, nh=24, scale=True, shift=True,
@@ -120,7 +122,6 @@ class AffineCL(nn.Module):
             x0, x1 = x[:, :self.dim // 2], x[:, self.dim // 2:]
         if self.parity:
             x0, x1 = x1, x0
-
         s = self.s_cond(x0)
         t = self.t_cond(x0)
         s0 = self.s_base if self.s_base is not None else torch.zeros_like(x0)
