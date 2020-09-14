@@ -78,7 +78,7 @@ def run_interventions(args, config):
 
 def plot_interventions(args, config):
     # plot the MSEs
-    n_obs_list = [250, 500, 1000, 1500, 2000, 2500, 5000]
+    n_obs_list = [250, 500, 750, 1000, 1250, 1500, 2000, 2500]
     models = ['carefl', 'gp', 'linear']
     to_models = lambda s: 'carefl' if 'carefl' in s else s
     results = {mod: None for mod in models}

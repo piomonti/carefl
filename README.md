@@ -73,11 +73,18 @@ This project uses normalizing flows implementations from [this](https://github.c
 To run simulations in parallel:
 ```bash
 for SIZE in 25 50 75 100 150 250 500; do
-    for ALGO in CAReFl LRHyv notears RECI ANM; do
+    for ALGO in LRHyv notears RECI ANM; do
         for DSET in linear hoyer2009 nueralnet_l1; do
-            sbatch slurm_main.sbatch -s --config simulations.yaml -m $DSET -a $ALGO -n $SIZE
+            sbatch slurm_main_cpu.sbatch -s --config simulations.yaml -m $DSET -a $ALGO -n $SIZE
         done
     done
+done
+ALGO=CAReFl
+for SIZE in 25 50 75 100 150 250 500; do
+    for DSET in linear hoyer2009 nueralnet_l1; do
+        sbatch slurm_main.sbatch -s --config simulations.yaml -m $DSET -a $ALGO -n $SIZE
+    done
+    
 done
 
 ```
@@ -85,10 +92,14 @@ ___
 
 To run interventions in parallel:
 ```bash
-for SIZE in 500 750 1000 1250 1500 2000 2500; do
-    for ALGO in carefl gp linear; do
-        sbatch slurm_main.sbatch -i --config interventions.yaml -a $ALGO -n $SIZE
+for SIZE in 250 500 750 1000 1250 1500 2000 2500; do
+    for ALGO in gp linear; do
+        sbatch slurm_main_cpu.sbatch -i --config interventions.yaml -a $ALGO -n $SIZE
     done
+done
+ALGO=carefl
+for SIZE in 250 500 750 1000 1250 1500 2000 2500; do
+    sbatch slurm_main.sbatch -i --config interventions.yaml -a $ALGO -n $SIZE
 done
 
 ```

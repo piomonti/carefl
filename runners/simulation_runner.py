@@ -52,16 +52,16 @@ def plot_simulations(args, config):
                  'linear': "Linear SEM\n" + r"$x_2 = x_1 + n_2 $",
                  'hoyer2009': "Nonlinear SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + n_2 $"}
 
-    label_dict = {'FlowCD': 'Affine flow LR',
-                  'LRHyv': 'Linear LR',
-                  'RECI': 'RECI',
-                  'ANM': 'ANM',
+    label_dict = {'carefl': 'Affine flow LR',
+                  'lrhyv': 'Linear LR',
+                  'reci': 'RECI',
+                  'anm': 'ANM',
                   'notears': 'NO-TEARS'}
 
     # define some parameters
     nvals = [25, 50, 75, 100, 150, 250, 500]
-    algos = ['CAReFl', 'LRHyv', 'notears', 'RECI', 'ANM']
-    to_algos = lambda s: 'CAReFl' if 'carefl' in s.lower() else s
+    algos = ['carefl', 'lrhyv', 'notears', 'reci', 'anm']
+    to_algos = lambda s: 'carefl' if 'carefl' in s.lower() else s
     sim_type = ['linear', 'hoyer2009', 'nueralnet_l1']
 
     res_all = {s: {a: [] for a in algos} for s in sim_type}
@@ -69,7 +69,7 @@ def plot_simulations(args, config):
     for s in sim_type:
         for a in args.sim_list:
             for n in nvals:
-                res = pickle.load(open(os.path.join(args.run, s, a, 'sim_{}.p'.format(n)), 'rb'))
+                res = pickle.load(open(os.path.join(args.run, 'simulations', s, a, 'sim_{}.p'.format(n)), 'rb'))
                 res_all[s][to_algos(a)].append(res['correct'])
 
     # prepare plot
