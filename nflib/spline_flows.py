@@ -32,8 +32,8 @@ def unconstrained_RQS(inputs, unnormalized_widths, unnormalized_heights,
     inside_intvl_mask = (inputs >= -tail_bound) & (inputs <= tail_bound)
     outside_interval_mask = ~inside_intvl_mask
 
-    outputs = torch.zeros_like(inputs)
-    logabsdet = torch.zeros_like(inputs)
+    outputs = torch.zeros_like(inputs).to(inputs.device)
+    logabsdet = torch.zeros_like(inputs).to(inputs.device)
 
     unnormalized_derivatives = F.pad(unnormalized_derivatives, pad=(1, 1))
     constant = np.log(np.exp(1 - min_derivative) - 1)
@@ -170,8 +170,8 @@ class NSF_AR(nn.Module):
         init.uniform_(self.init_param, - 1 / 2, 1 / 2)
 
     def forward(self, x):
-        z = torch.zeros_like(x)
-        log_det = torch.zeros(z.shape[0])
+        z = torch.zeros_like(x).to(x.device)
+        log_det = torch.zeros(z.shape[0]).to(x.device)
         for i in range(self.dim):
             if i == 0:
                 init_param = self.init_param.expand(x.shape[0], 3 * self.K - 1)
@@ -187,8 +187,8 @@ class NSF_AR(nn.Module):
         return z, log_det
 
     def backward(self, z):
-        x = torch.zeros_like(z)
-        log_det = torch.zeros(x.shape[0])
+        x = torch.zeros_like(z).to(z.device)
+        log_det = torch.zeros(x.shape[0]).to(z.device)
         for i in range(self.dim):
             if i == 0:
                 init_param = self.init_param.expand(x.shape[0], 3 * self.K - 1)
@@ -216,7 +216,7 @@ class NSF_CL(nn.Module):
         self.f2 = base_network(dim // 2, (3 * K - 1) * dim // 2, hidden_dim)
 
     def forward(self, x):
-        log_det = torch.zeros(x.shape[0])
+        log_det = torch.zeros(x.shape[0]).to(x.device)
         lower, upper = x[:, :self.dim // 2], x[:, self.dim // 2:]
         out = self.f1(lower).reshape(-1, self.dim // 2, 3 * self.K - 1)
         W, H, D = torch.split(out, self.K, dim = 2)
@@ -235,7 +235,7 @@ class NSF_CL(nn.Module):
         return torch.cat([lower, upper], dim = 1), log_det
 
     def backward(self, z):
-        log_det = torch.zeros(z.shape[0])
+        log_det = torch.zeros(z.shape[0]).to(z.device)
         lower, upper = z[:, :self.dim // 2], z[:, self.dim // 2:]
         out = self.f2(upper).reshape(-1, self.dim // 2, 3 * self.K - 1)
         W, H, D = torch.split(out, self.K, dim = 2)
