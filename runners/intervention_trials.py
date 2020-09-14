@@ -13,23 +13,23 @@ from models import ANM, CAReFl
 
 
 def res_save_name(config):
-    if config.algorithm != 'carefl':
+    if config.algorithm.lower() != 'carefl':
         return 'int_{}{}.p'.format(config.data.n_points, 'r' * config.data.random)
     return 'int_{}{}_{}_{}_{}_{}.p'.format(config.data.n_points,
                                            'r' * config.data.random,
-                                           config.model.architecture.lower(),
-                                           config.model.net_class.lower(),
-                                           config.model.nl,
-                                           config.model.nh)
+                                           config.flow.architecture.lower(),
+                                           config.flow.net_class.lower(),
+                                           config.flow.nl,
+                                           config.flow.nh)
 
 
 def fig_save_name(config):
     return 'int_mse_{}{}_{}_{}_{}_{}.pdf'.format('r' * config.data.random,
                                                  'e' * config.data.expected,
-                                                 config.model.architecture.lower(),
-                                                 config.model.net_class.lower(),
-                                                 config.model.nl,
-                                                 config.model.nh)
+                                                 config.flow.architecture.lower(),
+                                                 config.flow.net_class.lower(),
+                                                 config.flow.nl,
+                                                 config.flow.nh)
 
 
 def intervention_sem(n_obs, dim=4, seed=0, random=True):

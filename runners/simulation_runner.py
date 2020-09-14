@@ -14,20 +14,20 @@ from models import RECI, ANM, EntropyLR, CAReFl, LinearNOTEARS
 
 
 def res_save_name(config):
-    if config.algorithm != 'carefl':
+    if config.algorithm.lower() != 'carefl':
         return 'sim_{}.p'.format(config.data.n_points)
     return 'sim_{}_{}_{}_{}_{}.p'.format(config.data.n_points,
-                                         config.model.architecture.lower(),
-                                         config.model.net_class.lower(),
-                                         config.model.nl,
-                                         config.model.nh)
+                                         config.flow.architecture.lower(),
+                                         config.flow.net_class.lower(),
+                                         config.flow.nl,
+                                         config.flow.nh)
 
 
 def fig_save_name(config):
-    return 'sim_causal_dir_{}_{}_{}_{}.pdf'.format(config.model.architecture.lower(),
-                                                   config.model.net_class.lower(),
-                                                   config.model.nl,
-                                                   config.model.nh)
+    return 'sim_causal_dir_{}_{}_{}_{}.pdf'.format(config.flow.architecture.lower(),
+                                                   config.flow.net_class.lower(),
+                                                   config.flow.nl,
+                                                   config.flow.nh)
 
 
 def run_simulations(args, config):
