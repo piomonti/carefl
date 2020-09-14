@@ -1,9 +1,9 @@
 # Code for "Autoregressive flow-based causal discovery and inference"
 
 
-This repository contains code to reproduce results presented in "Autoregressive flow-based causal 
-discovery and inference", presented at the 2nd ICML workshop on Invertible Neural Networks, 
-Normalizing Flows, and Explicit Likelihood Models (2020). 
+This repository contains code to reproduce results presented in "Autoregressive flow-based causal
+discovery and inference", presented at the 2nd ICML workshop on Invertible Neural Networks,
+Normalizing Flows, and Explicit Likelihood Models (2020).
 
 The `main.py` script is the main gateway to reproduce the experiments details in the mansucript.
 Run `python main.py -h` to learn about the arguments of the script:
@@ -26,9 +26,9 @@ optional arguments:
 ```
 
 ___
-To reproduce causal discovery simulations run: 
+To reproduce causal discovery simulations run:
 ```
-python main.py -s --dataset all 
+python main.py -s --dataset all
 ```
 This will run our proposed method, as well as baseline methods on the simulated data, as described in the manuscript.
 Then it will plot Figure 1.
@@ -66,7 +66,7 @@ This project was tested with the following versions:
 - matplotlib 3.2.1
 - seaborn 0.10
 
-This project uses normalizing flows implementations from [this](https://github.com/karpathy/pytorch-normalizing-flows) library. 
+This project uses normalizing flows implementations from [this](https://github.com/karpathy/pytorch-normalizing-flows) library.
 
 ### Slurm usage
 
@@ -75,16 +75,16 @@ To run simulations in parallel:
 for SIZE in 25 50 75 100 150 250 500; do
     for ALGO in LRHyv notears RECI ANM; do
         for DSET in linear hoyer2009 nueralnet_l1; do
-            sbatch slurm_main_cpu.sbatch -s --config simulations.yaml -m $DSET -a $ALGO -n $SIZE
+            sbatch slurm_main_cpu.sbatch -s -m $DSET -a $ALGO -n $SIZE
         done
     done
 done
 ALGO=CAReFl
 for SIZE in 25 50 75 100 150 250 500; do
     for DSET in linear hoyer2009 nueralnet_l1; do
-        sbatch slurm_main.sbatch -s --config simulations.yaml -m $DSET -a $ALGO -n $SIZE
+        sbatch slurm_main.sbatch -s -m $DSET -a $ALGO -n $SIZE
     done
-    
+
 done
 
 ```
@@ -94,12 +94,12 @@ To run interventions in parallel:
 ```bash
 for SIZE in 250 500 750 1000 1250 1500 2000 2500; do
     for ALGO in gp linear; do
-        sbatch slurm_main_cpu.sbatch -i --config interventions.yaml -a $ALGO -n $SIZE
+        sbatch slurm_main_cpu.sbatch -i -a $ALGO -n $SIZE
     done
 done
 ALGO=carefl
 for SIZE in 250 500 750 1000 1250 1500 2000 2500; do
-    sbatch slurm_main.sbatch -i --config interventions.yaml -a $ALGO -n $SIZE
+    sbatch slurm_main.sbatch -i -a $ALGO -n $SIZE
 done
 
 ```

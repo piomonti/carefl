@@ -81,7 +81,7 @@ def main():
     # parse command line arguments
     args = parse_input()
     # load config
-    with open(os.path.join('configs', read_config(args.config)), 'r') as f:
+    with open(os.path.join('configs', read_config(args)), 'r') as f:
         print('loading config file: {}'.format(os.path.join('configs', args.config)))
         config_raw = yaml.load(f, Loader=yaml.FullLoader)
     config = dict2namespace(config_raw)
