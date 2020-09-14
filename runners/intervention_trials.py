@@ -12,6 +12,26 @@ from data.generate_synth_data import gen_synth_causal_dat
 from models import ANM, CAReFl
 
 
+def res_save_name(config):
+    if config.algorithm != 'carefl':
+        return 'int_{}{}.p'.format(config.data.n_points, 'r' * config.data.random)
+    return 'int_{}{}_{}_{}_{}_{}.p'.format(config.data.n_points,
+                                           'r' * config.data.random,
+                                           config.model.architecture.lower(),
+                                           config.model.net_class.lower(),
+                                           config.model.nl,
+                                           config.model.nh)
+
+
+def fig_save_name(config):
+    return 'int_mse_{}{}_{}_{}_{}_{}.pdf'.format('r' * config.data.random,
+                                                 'e' * config.data.expected,
+                                                 config.model.architecture.lower(),
+                                                 config.model.net_class.lower(),
+                                                 config.model.nl,
+                                                 config.model.nh)
+
+
 def intervention_sem(n_obs, dim=4, seed=0, random=True):
     if dim == 4:
         # generate some 4D data according to the following SEM
@@ -68,7 +88,7 @@ def run_interventions(args, config):
     results["x4"] = mse_x4
     results["x3e"] = mse_x3e
     results["x4e"] = mse_x4e
-    pickle.dump(results, open(os.path.join(args.output, "int_{}{}.p".format(n_obs, 'r' * config.data.random)), 'wb'))
+    pickle.dump(results, open(os.path.join(args.output, res_save_name(config)), 'wb'))
 
 
 def plot_interventions(args, config):
@@ -81,9 +101,8 @@ def plot_interventions(args, config):
     results = {mod: {x: [] for x in variables} for mod in models}
     for a in args.int_list:
         for n in n_obs_list:
-            res = pickle.load(
-                open(os.path.join(args.run, 'interventions', a, "int_{}{}.p".format(n, 'r' * config.data.random)),
-                     'rb'))
+            config.data.n_points = n
+            res = pickle.load(open(os.path.join(args.run, 'interventions', a, res_save_name(config)), 'rb'))
             for x in variables:
                 results[to_models(a)][x].append(res[x])
     # produce plot
@@ -104,14 +123,12 @@ def plot_interventions(args, config):
         else:
             axs[1].plot(n_obs_list, results[mod]["x4"], label='{}'.format(label[mod]), linestyle='-',
                         marker='o', linewidth=2, alpha=.8)
-
     axs[0].set_title(r'$\mathbb{E}[X_3|do(X_1=a)]$', fontsize=13)
     axs[1].set_title(r'$\mathbb{E}[X_4|do(X_1=a)]$', fontsize=13)
     for ax in axs:
         ax.set_xlabel(r'Sample size', fontsize=10)
         ax.set_ylabel(r'MSE', fontsize=10)
         ax.set_yscale('log')
-
     fig.legend(  # The labels for each line
         loc="center right",  # Position of legend
         borderaxespad=0.2,  # Small spacing around legend box
@@ -119,9 +136,7 @@ def plot_interventions(args, config):
     )
     plt.tight_layout()
     plt.subplots_adjust(right=0.85)
-    plt.savefig(os.path.join(args.run,
-                             'intervention_mse_{}{}.pdf'.format('r' * config.data.random, 'e' * config.data.expected)),
-                dpi=300)
+    plt.savefig(os.path.join(args.run, fig_save_name(config)), dpi=300)
 
 
 def intervention(args, config, dim=4):

@@ -84,7 +84,6 @@ for SIZE in 25 50 75 100 150 250 500; do
     for DSET in linear hoyer2009 nueralnet_l1; do
         sbatch slurm_main.sbatch -s -m $DSET -a $ALGO -n $SIZE
     done
-
 done
 
 ```
