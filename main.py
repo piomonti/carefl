@@ -14,34 +14,31 @@ from runners.simulation_runner import run_simulations, plot_simulations
 
 def parse_input():
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--config', type=str, default='simulations.yaml', help='config file to use')
     parser.add_argument('--n-sims', type=int, default=250, help='Number of synthetic simulations to run')
     parser.add_argument('--run', type=str, default='results', help='Path for saving results.')
     parser.add_argument('--seed', type=int, default=0, help='random seed')
     parser.add_argument('--plot', action='store_true', help='plot experiments')
 
-
     parser.add_argument('-s', '--simulation', action='store_true', help='run the CD exp on synthetic data')
     parser.add_argument('-p', '--pairs', action='store_true', help='Run Cause Effect Pairs experiments')
     parser.add_argument('-i', '--intervention', action='store_true', help='run intervention exp on toy example')
     parser.add_argument('-c', '--counterfactual', action='store_true', help='run counterfactual exp on toy example')
-
+    parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
     # params to overwrite config file. useful for batch running in slurm
-    parser.add_argument('-m', '--causal-mech', type=str, default='none', help='Dataset to run synthetic experiments on.')
-    parser.add_argument('-a', '--algorithm', type=str, default='none', help='algorithm to run')
+    parser.add_argument('-m', '--causal-mech', type=str, default='', help='Dataset to run synthetic experiments on.')
+    parser.add_argument('-a', '--algorithm', type=str, default='', help='algorithm to run')
     parser.add_argument('-n', '--n-points', type=int, default=0, help='number of simulated data points')
 
     return parser.parse_args()
 
 
 def debug_options(args, config):
-    if args.causal_mech != 'none':
+    if args.causal_mech != '':
         config.data.causal_mech = args.causal_mech
-    if args.algorithm != 'none':
+    if args.algorithm != '':
         config.algorithm = args.algorithm
     if args.n_points != 0:
         config.data.n_points = args.n_points
-
 
 
 def dict2namespace(config):
@@ -67,11 +64,24 @@ def make_and_set_dirs(args, config):
     os.makedirs(args.output, exist_ok=True)
 
 
+def read_config(args):
+    if args.config != '':
+        return args.config
+    if args.simulation:
+        return 'simulations.yaml'
+    if args.intervention:
+        return 'interventions.yaml'
+    if args.pairs:
+        return 'pairs.yaml'
+    if args.counterfactual:
+        return 'counterfactuals.yaml'
+
+
 def main():
     # parse command line arguments
     args = parse_input()
     # load config
-    with open(os.path.join('configs', args.config), 'r') as f:
+    with open(os.path.join('configs', read_config(args.config)), 'r') as f:
         print('loading config file: {}'.format(os.path.join('configs', args.config)))
         config_raw = yaml.load(f, Loader=yaml.FullLoader)
     config = dict2namespace(config_raw)
@@ -89,9 +99,9 @@ def main():
             # run algorithm on simulated data
             # and save the results as pickle files which can be used later to plot Fig 1.
             print('Running {} on {} synthetic experiments ({} simulations - {} points)'.format(config.algorithm,
-                                                                                   config.data.causal_mech,
-                                                                                   args.n_sims,
-                                                                                   config.data.n_points))
+                                                                                               config.data.causal_mech,
+                                                                                               args.n_sims,
+                                                                                               config.data.n_points))
             run_simulations(args, config)
         else:
             plot_simulations(args, config)
