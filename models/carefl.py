@@ -12,7 +12,7 @@ from torch.distributions import Laplace, Uniform, TransformedDistribution, Sigmo
 from torch.utils.data import DataLoader
 
 from data.generate_synth_data import CustomSyntheticDatasetDensity
-from nflib import AffineCL, NormalizingFlowModel, MLP1layer, MAF, NSF_AR, ARMLP
+from nflib import AffineCL, NormalizingFlowModel, MLP1layer, MAF, NSF_AR, ARMLP, MLP4
 
 
 class CAReFl:
@@ -47,22 +47,28 @@ class CAReFl:
         else:
             prior = TransformedDistribution(Uniform(torch.zeros(dim).to(self.device), torch.ones(dim).to(self.device)),
                                             SigmoidTransform().inv)
-        # flow type
-        if self.config.flow.architecture.lower() in ['cl', 'realnvp']:
-            affine_flow = AffineCL
-        elif self.config.flow.architecture.lower() == 'maf':
-            affine_flow = MAF
-        elif self.config.flow.architecture.lower() == 'spline':
-            affine_flow = NSF_AR
-        else:
-            raise NotImplementedError('Architecture {} not understood.'.format(self.config.flow.architecture))
         # net type for flow parameters
         if self.config.flow.net_class.lower() == 'mlp':
             net_class = MLP1layer
+        elif self.config.flow.net_class.lower() == 'mlp4':
+            net_class = MLP4
         elif self.config.flow.net_class.lower() == 'armlp':
             net_class = ARMLP
         else:
             raise NotImplementedError('net_class {} not understood.'.format(self.config.flow.net_class))
+
+        # flow type
+        def affine_flow(hidden_dim):
+            if self.config.flow.architecture.lower() in ['cl', 'realnvp']:
+                return AffineCL(dim=dim, nh=hidden_dim, scale_base=self.config.flow.scale_base,
+                                shift_base=self.config.flow.shift_base, net_class=net_class)
+            elif self.config.flow.architecture.lower() == 'maf':
+                return MAF(dim=dim, nh=hidden_dim, net_class=net_class, parity=False)
+            elif self.config.flow.architecture.lower() == 'spline':
+                return NSF_AR(dim=dim, hidden_dim=hidden_dim, base_network=net_class)
+            else:
+                raise NotImplementedError('Architecture {} not understood.'.format(self.config.flow.architecture))
+
         # support training multiple flows for varying depth and width, and keep only best
         self.n_layers = self.n_layers if type(self.n_layers) is list else [self.n_layers]
         self.n_hidden = self.n_hidden if type(self.n_hidden) is list else [self.n_hidden]
@@ -70,9 +76,7 @@ class CAReFl:
         for nl in self.n_layers:
             for nh in self.n_hidden:
                 # construct normalizing flows
-                flow_list = [affine_flow(dim=dim, nh=nh, scale_base=self.config.flow.scale_base,
-                                         shift_base=self.config.flow.shift_base, net_class=net_class)
-                             for _ in range(nl)]
+                flow_list = [affine_flow(nh) for _ in range(nl)]
                 normalizing_flows.append(NormalizingFlowModel(prior, flow_list).to(self.device))
         return normalizing_flows
 

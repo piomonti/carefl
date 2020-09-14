@@ -53,7 +53,7 @@ class MLP1layer(nn.Module):
         return self.net(x)
 
 
-class MLP(nn.Module):
+class MLP4(nn.Module):
     """ a simple 4-layer MLP """
 
     def __init__(self, nin, nout, nh):
@@ -83,7 +83,7 @@ class PosEncMLP(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             PositionalEncoder(freqs),
-            MLP(nin * len(freqs) * 2, nout, nh),
+            MLP4(nin * len(freqs) * 2, nout, nh),
         )
 
     def forward(self, x):

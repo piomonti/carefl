@@ -40,7 +40,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from nflib.nets import LeafParam, MLP
+from nflib.nets import LeafParam, MLP4
 
 
 class AffineConstantFlow(nn.Module):
@@ -100,7 +100,7 @@ class AffineCL(nn.Module):
     - our implementation also allows for unconditional scaling and shifting of the non-transformed half
     """
 
-    def __init__(self, dim, parity=False, net_class=MLP, nh=24, scale=True, shift=True,
+    def __init__(self, dim, parity=False, net_class=MLP4, nh=24, scale=True, shift=True,
                  scale_base=False, shift_base=False, checkerboard=False):
         super().__init__()
         self.dim = dim
@@ -264,7 +264,7 @@ class SlowMAF(nn.Module):
     Masked Autoregressive Flow, slow version with explicit networks per dim
     """
 
-    def __init__(self, dim, parity, net_class=MLP, nh=24):
+    def __init__(self, dim, parity, net_class=MLP4, nh=24):
         super().__init__()
         self.dim = dim
         self.layers = nn.ModuleDict()
