@@ -24,9 +24,9 @@ class CAReFl:
         self.device = config.device
         self.verbose = config.training.verbose
 
-        # initial guess on correct model:
+        # initial guess on correct model to be updated after each fit
         self.dim = None
-        self.direction = 'none'  # to be updated after each fit
+        self.direction = 'none'
         self.flow_xy = self.flow_yx = self.flow = None
         self._nhxy = self._nhyx = self._nlxy = self._nlyx = None
 
@@ -45,7 +45,8 @@ class CAReFl:
         if self.config.flow.prior_dist == 'laplace':
             prior = Laplace(torch.zeros(dim).to(self.device), torch.ones(dim).to(self.device))
         else:
-            prior = TransformedDistribution(Uniform(torch.zeros(dim).to(self.device), torch.ones(dim).to(self.device)), SigmoidTransform().inv)
+            prior = TransformedDistribution(Uniform(torch.zeros(dim).to(self.device), torch.ones(dim).to(self.device)),
+                                            SigmoidTransform().inv)
         # flow type
         if self.config.flow.architecture.lower() in ['cl', 'realnvp']:
             affine_flow = AffineCL

@@ -36,20 +36,15 @@ def intervention_sem(n_obs, dim=4, seed=0, random=True):
 
 
 def run_interventions(args, config):
-    results = {"x3": [], "x4": [], "x3e": [], "x4e": []}
     n_obs = config.data.n_points
     model = config.algorithm.lower()
-
     print("** {} observations **".format(n_obs))
     # generate coeffcients for equation (12), and data from that SEM
-    dat, coeffs, dag = intervention_sem(n_obs, dim=4, seed=config.data.seed, random=config.data.random)
-
+    data, coeffs, dag = intervention_sem(n_obs, dim=4, seed=config.data.seed, random=config.data.random)
     print("fitting a {} model".format(model))
     # fit to an affine autoregressive flow or ANM with gp/linear functions
-    # mod = CAReFl(n_layers=5, n_hidden=10, epochs=750, opt_method='scheduling') if model == 'flow' else ANM(method=model)
     mod = CAReFl(config) if model == 'carefl' else ANM(method=model)
-
-    mod.fit_to_sem(dat, dag)
+    mod.fit_to_sem(data, dag)
     # intervene on X_1 and get a sample of {x | do(X_1=a)} for a in [-3, 3]
     avals = np.arange(-3, 3, .1)
     x_int_sample = []
@@ -60,19 +55,19 @@ def run_interventions(args, config):
         x_int_exp.append(res[1].mean(axis=0))
     x_int_sample = np.array(x_int_sample)
     x_int_exp = np.array(x_int_exp)
-    # compute the MSE between the true E[x_2|x_0=a] to the empirical expectation from the sample
-    # we know that the true E[x_2|x_0=a] = a
+    # compute the MSE between the true E[x_3|x_1=a] to the empirical expectation from the sample
+    # we know that the true E[x_3|x_1=a] = a
     mse_x3 = np.mean((x_int_sample[:, 2] - avals) ** 2)
     mse_x3e = np.mean((x_int_exp[:, 2] - avals) ** 2)
-    # do the same for x_3; true E[x_3|x_0=a] = c_1*a^2
+    # do the same for x_4; true E[x_4|x_1=a] = c_1*a^2
     mse_x4 = np.mean((x_int_sample[:, 3] - coeffs[1] * avals * avals) ** 2)
     mse_x4e = np.mean((x_int_exp[:, 3] - coeffs[1] * avals * avals) ** 2)
     # store results
-    results["x3"].append(mse_x3)
-    results["x4"].append(mse_x4)
-    results["x3e"].append(mse_x3e)
-    results["x4e"].append(mse_x4e)
-
+    results = {}
+    results["x3"] = mse_x3
+    results["x4"] = mse_x4
+    results["x3e"] = mse_x3e
+    results["x4e"] = mse_x4e
     pickle.dump(results, open(os.path.join(args.output, "int_{}{}.p".format(n_obs, 'r' * config.data.random)), 'wb'))
 
 
@@ -81,35 +76,49 @@ def plot_interventions(args, config):
     n_obs_list = [250, 500, 750, 1000, 1250, 1500, 2000, 2500]
     models = ['carefl', 'gp', 'linear']
     to_models = lambda s: 'carefl' if 'carefl' in s else s
-    results = {mod: None for mod in models}
-
+    # load results from disk
+    variables = ['x3', 'x3e', 'x4', 'x4e']
+    results = {mod: {x: [] for x in variables} for mod in models}
     for a in args.int_list:
         for n in n_obs_list:
             res = pickle.load(
-                open(os.path.join(args.run, args.doc, a, "int_{}{}.p".format(n, 'r' * config.data.random)), 'rb'))
-            results[to_models(a)] = res
-
+                open(os.path.join(args.run, 'interventions', a, "int_{}{}.p".format(n, 'r' * config.data.random)),
+                     'rb'))
+            for x in variables:
+                results[to_models(a)][x].append(res[x])
+    # produce plot
     sns.set_style("whitegrid")
     sns.set_palette(sns.color_palette("muted", 8))
-    plt.figure()
-    for i, mod in enumerate(models):
+    label = {'carefl': 'CAReFl', 'gp': 'ANM-GP', 'linear': 'ANM-linear'}
+    fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
+    for mod in models:
         # plot E[X_3|do(X_1=a)]
         if config.data.expected:
-            plt.plot(n_obs_list, results[mod]["x3e"], label=r'$X_3$ - {}'.format(mod), linestyle='-.',
-                     color=sns.color_palette("muted", 8)[2 * i], linewidth=2, alpha=.8)
+            axs[0].plot(n_obs_list, results[mod]["x3e"], linestyle='-.', marker='o', linewidth=2, alpha=.8)
         else:
-            plt.plot(n_obs_list, results[mod]["x3"], label=r'$X_3$ - {}'.format(mod), linestyle='-',
-                     color=sns.color_palette("muted", 8)[2 * i], linewidth=2, alpha=.8)
+            axs[0].plot(n_obs_list, results[mod]["x3"], linestyle='-', marker='o', linewidth=2, alpha=.8)
         # plot E[X_4|do(X_1=a)]
         if config.data.expected:
-            plt.plot(n_obs_list, results[mod]["x4e"], label=r'$X_4$ - {}'.format(mod), linestyle='-.',
-                     color=sns.color_palette("muted", 8)[2 * i + 1], linewidth=2, alpha=.8)
+            axs[1].plot(n_obs_list, results[mod]["x4e"], label='{}'.format(label[mod]), linestyle='-.',
+                        marker='o', linewidth=2, alpha=.8)
         else:
-            plt.plot(n_obs_list, results[mod]["x4"], label=r'$X_4$ - {}'.format(mod), linestyle='-',
-                     color=sns.color_palette("muted", 8)[2 * i + 1], linewidth=2, alpha=.8)
-    plt.xlabel(r'Sample size', fontsize=12)
-    plt.ylabel(r'MSE', fontsize=12)
-    plt.legend()
+            axs[1].plot(n_obs_list, results[mod]["x4"], label='{}'.format(label[mod]), linestyle='-',
+                        marker='o', linewidth=2, alpha=.8)
+
+    axs[0].set_title(r'$\mathbb{E}[X_3|do(X_1=a)]$', fontsize=13)
+    axs[1].set_title(r'$\mathbb{E}[X_4|do(X_1=a)]$', fontsize=13)
+    for ax in axs:
+        ax.set_xlabel(r'Sample size', fontsize=10)
+        ax.set_ylabel(r'MSE', fontsize=10)
+        ax.set_yscale('log')
+
+    fig.legend(  # The labels for each line
+        loc="center right",  # Position of legend
+        borderaxespad=0.2,  # Small spacing around legend box
+        title="Algorithm"  # Title for the legend
+    )
+    plt.tight_layout()
+    plt.subplots_adjust(right=0.85)
     plt.savefig(os.path.join(args.run,
                              'intervention_mse_{}{}.pdf'.format('r' * config.data.random, 'e' * config.data.expected)),
                 dpi=300)

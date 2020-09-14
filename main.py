@@ -27,17 +27,17 @@ def parse_input():
     parser.add_argument('-c', '--counterfactual', action='store_true', help='run counterfactual exp on toy example')
 
     # params to overwrite config file. useful for batch running in slurm
-    parser.add_argument('-m', '--causal-mech', type=str, default=None, help='Dataset to run synthetic experiments on.')
-    parser.add_argument('-a', '--algorithm', type=str, default=None, help='algorithm to run')
+    parser.add_argument('-m', '--causal-mech', type=str, default='none', help='Dataset to run synthetic experiments on.')
+    parser.add_argument('-a', '--algorithm', type=str, default='none', help='algorithm to run')
     parser.add_argument('-n', '--n-points', type=int, default=0, help='number of simulated data points')
 
     return parser.parse_args()
 
 
 def debug_options(args, config):
-    if args.causal_mech is not None:
+    if args.causal_mech != 'none':
         config.data.causal_mech = args.causal_mech
-    if args.algorithm is not None:
+    if args.algorithm != 'none':
         config.algorithm = args.algorithm
     if args.n_points != 0:
         config.data.n_points = args.n_points
