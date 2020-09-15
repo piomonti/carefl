@@ -12,8 +12,8 @@ from data.generate_synth_data import gen_synth_causal_dat
 from models import ANM, CAReFl
 
 
-def res_save_name(config):
-    if config.algorithm.lower() != 'carefl':
+def res_save_name(config, algo):
+    if algo.lower() != 'carefl':
         return 'int_{}{}.p'.format(config.data.n_points, 'r' * config.data.random)
     return 'int_{}{}_{}_{}_{}_{}.p'.format(config.data.n_points,
                                            'r' * config.data.random,
@@ -88,7 +88,7 @@ def run_interventions(args, config):
     results["x4"] = mse_x4
     results["x3e"] = mse_x3e
     results["x4e"] = mse_x4e
-    pickle.dump(results, open(os.path.join(args.output, res_save_name(config)), 'wb'))
+    pickle.dump(results, open(os.path.join(args.output, res_save_name(config, model)), 'wb'))
 
 
 def plot_interventions(args, config):
@@ -102,7 +102,7 @@ def plot_interventions(args, config):
     for a in args.int_list:
         for n in n_obs_list:
             config.data.n_points = n
-            res = pickle.load(open(os.path.join(args.run, 'interventions', a, res_save_name(config)), 'rb'))
+            res = pickle.load(open(os.path.join(args.run, 'interventions', a, res_save_name(config, a)), 'rb'))
             for x in variables:
                 results[to_models(a)][x].append(res[x])
     # produce plot

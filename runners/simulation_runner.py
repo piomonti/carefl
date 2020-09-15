@@ -13,8 +13,8 @@ from data.generate_synth_data import gen_synth_causal_dat
 from models import RECI, ANM, EntropyLR, CAReFl, LinearNOTEARS
 
 
-def res_save_name(config):
-    if config.algorithm.lower() != 'carefl':
+def res_save_name(config, algo):
+    if algo.lower() != 'carefl':
         return 'sim_{}.p'.format(config.data.n_points)
     return 'sim_{}_{}_{}_{}_{}.p'.format(config.data.n_points,
                                          config.flow.architecture.lower(),
@@ -58,7 +58,7 @@ def run_simulations(args, config):
         results['p'].append(p)
         results['c'].append(1. * (direction == mod_dir))
     results['correct'] = per_correct / n_sims
-    pickle.dump(results, open(os.path.join(args.output, res_save_name(config)), 'wb'))
+    pickle.dump(results, open(os.path.join(args.output, res_save_name(config, algo)), 'wb'))
 
 
 def plot_simulations(args, config):
@@ -81,7 +81,7 @@ def plot_simulations(args, config):
         for a in args.sim_list:
             for n in nvals:
                 config.data.n_points = n
-                res = pickle.load(open(os.path.join(args.run, 'simulations', s, a, res_save_name(config)), 'rb'))
+                res = pickle.load(open(os.path.join(args.run, 'simulations', s, a, res_save_name(config, to_algos(a))), 'rb'))
                 res_all[s][to_algos(a)].append(res['correct'])
     # prepare plot
     sns.set_style("whitegrid")

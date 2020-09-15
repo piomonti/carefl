@@ -86,7 +86,7 @@ class CAReFl:
         train_loader = DataLoader(dset, shuffle=True, batch_size=128)
         flows = self._get_flow_arch(dim)
         all_loss_vals = []
-        print('Training {} flows'.format(len(flows)))
+        # print('Training {} flows'.format(len(flows)))
         for flow in flows:
             optimizer, scheduler = self._get_optimizer(flow.parameters())
             flow.train()
@@ -114,7 +114,7 @@ class CAReFl:
 
     def _evaluate(self, flows, data):
         best_score, best_flow, nl, nh = -1e60, flows[0], 0, 0
-        print('Evaluating {} flows'.format(len(flows)))
+        # print('Evaluating {} flows'.format(len(flows)))
         for idx, flow in enumerate(flows):
             score = np.nanmean(flow.log_likelihood(torch.tensor(data.astype(np.float32)).to(self.device)))
             if score > best_score:
