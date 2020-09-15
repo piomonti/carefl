@@ -44,9 +44,9 @@ def run_single_pair(config, pair_id, remove_outliers=False, scale_dat=True, verb
         print('baseline dist: ' + config.flow.prior_dist)
 
     model = CAReFl(config)
-    p, _, results = model.flow_lr(dat_id)
+    p = model.flow_lr(dat_id)
     pred_model = model.direction
-    return results, pred_model, dir_id, np.minimum(np.unique(dat_id[:, 0]).shape[0] / float(dat_id.shape[0]),
+    return pred_model, dir_id, np.minimum(np.unique(dat_id[:, 0]).shape[0] / float(dat_id.shape[0]),
                                                    np.unique(dat_id[:, 1]).shape[0] / float(dat_id.shape[0]))
 
 
@@ -64,7 +64,7 @@ def run_cause_effect_pairs(args, config):
         if i in skip_pairs:
             pass
         else:
-            res, pred_model, true_model, cts_ratio = run_single_pair(config, i, remove_outliers=False, scale_dat=True,
+            pred_model, true_model, cts_ratio = run_single_pair(config, i, remove_outliers=False, scale_dat=True,
                                                                      verbose=True)
 
             running_count += 1

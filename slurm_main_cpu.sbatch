@@ -7,7 +7,7 @@
 #SBATCH -p cpu
 #SBATCH -N 1
 #SBATCH -c 12
-#SBATCH --mem=8G
+#SBATCH --mem=24G
 #SBATCH --time=0-12:00
 #
 
