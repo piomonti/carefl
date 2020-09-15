@@ -124,7 +124,7 @@ class CAReFl:
         return best_flow, best_score, nl, nh
 
     def _get_params_from_idx(self, idx):
-        return self.n_layers[idx // len(self.n_hidden)], self.n_hidden[idx % len(self.n_layers)]
+        return self.n_layers[idx // len(self.n_hidden)], self.n_hidden[idx % len(self.n_hidden)]
 
     def predict_proba(self, data):
         """Prediction method for pairwise causal inference using the Affine Flow LR model."""
@@ -152,7 +152,7 @@ class CAReFl:
         self.flow_xy, score_xy, self._nlxy, self._nhxy = self._evaluate(flows_xy, data_test)
         # Conditional Flow Model: Y->X
         torch.manual_seed(self.config.training.seed)
-        flows_yx, _ = self._train(data)
+        flows_yx, _ = self._train(data[:, [1, 0]])
         self.flow_yx, score_yx, self._nlyx, self._nhyx = self._evaluate(flows_yx, data_test[:, [1, 0]])
         # compute LR
         p = score_xy - score_yx
