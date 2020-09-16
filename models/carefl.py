@@ -83,7 +83,7 @@ class CAReFl:
     def _train(self, data):
         dim = data.shape[1]
         dset = CustomSyntheticDatasetDensity(data.astype(np.float32))
-        train_loader = DataLoader(dset, shuffle=True, batch_size=128)
+        train_loader = DataLoader(dset, shuffle=True, batch_size=self.config.training.batch_size)
         flows = self._get_flow_arch(dim)
         all_loss_vals = []
         # print('Training {} flows'.format(len(flows)))

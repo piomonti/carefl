@@ -27,6 +27,7 @@ training:
   verbose: false
   split: .8  # only relevant for flow LR
   seed: 0
+  batch_size: 128
 
 
 optim:

@@ -27,7 +27,7 @@ training:
   verbose: true
   split: .8
   seed: 0
-
+  batch_size: 128
 
 optim:
   weight_decay: 0.000
