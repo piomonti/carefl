@@ -68,24 +68,25 @@ def make_and_set_dirs(args, config):
 
 def read_config(args):
     if args.config != '':
-        return args.config
+        return
     if args.simulation:
-        return 'simulations.yaml'
+        args.config = 'simulations.yaml'
     if args.intervention:
-        return 'interventions.yaml'
+        args.config = 'interventions.yaml'
     if args.pairs:
-        return 'pairs.yaml'
+        args.config = 'pairs.yaml'
     if args.counterfactual:
-        return 'counterfactuals.yaml'
+        args.config = 'counterfactuals.yaml'
     if args.video:
-        return 'video.yaml'
+        args.config = 'video.yaml'
 
 
 def main():
     # parse command line arguments
     args = parse_input()
+    read_config(args)
     # load config
-    with open(os.path.join('configs', read_config(args)), 'r') as f:
+    with open(os.path.join('configs', args.config), 'r') as f:
         print('loading config file: {}'.format(os.path.join('configs', args.config)))
         config_raw = yaml.load(f, Loader=yaml.FullLoader)
     config = dict2namespace(config_raw)

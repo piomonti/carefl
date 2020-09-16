@@ -90,9 +90,9 @@ class SingleVideoDataset(Dataset):
             video_name (string): Alternatively, directly give the name of the video
             transform (callable, optional): Optional transform to be applied on a sample.
         """
-        self.root = '/nfs/data/ilyesk/arrow/'
-        video_path = os.path.join(self.root, 'ArrowDataAll')
-        names = os.listdir(self.video_path)
+        self.root = '/nfs/gatsbystor/ilyesk/arrow/'
+        self.video_path = os.path.join(self.root, 'ArrowDataAll')
+        self.names = os.listdir(self.video_path)
         if video_idx is None and video_name is None:
             raise ValueError('Please specify a video index or name')
         if video_idx is not None and video_name is not None:
@@ -132,7 +132,7 @@ class ArrowDataset(Dataset):
             transform (callable, optional): Optional transform to be applied on a sample.
             lag: lag between the returned frames
         """
-        self.root = '/nfs/data/ilyesk/arrow/'
+        self.root = '/nfs/gatsbystor/ilyesk/arrow/'
         self.video_path = os.path.join(self.root, 'ArrowDataAll')
         self.names = os.listdir(self.video_path)
         if video_idx is None and video_name is None:
@@ -194,7 +194,7 @@ def video_runner(args, config):
     # load a CAReFl model
     model = CAReFl(config)
     # predict_proba takes one argument, pack dsets into a tuple
-    p, dir = model.predict_proba((dset, test_dset))
-    print(dir == 'x->y')
-    result = {'p': p, 'dir': dir, 'c': dir == 'x->y'}
+    p, direction = model.predict_proba((dset, test_dset))
+    print(direction == 'x->y')
+    result = {'p': p, 'dir': direction, 'c': direction == 'x->y'}
     pickle.dump(result, open(os.path.join(args.output, res_save_name(args, config)), 'wb'))
