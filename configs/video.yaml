@@ -5,6 +5,7 @@ data:
   crop_size: 64
   resize: true
   crop: true
+  random_crop: true
 
 
 flow:

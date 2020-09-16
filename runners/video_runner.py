@@ -4,6 +4,7 @@ import torch
 import torchvision
 from skimage import io, transform
 from torch.utils.data import Dataset
+import pickle
 
 from models import CAReFl
 
@@ -166,12 +167,26 @@ class ArrowDataset(Dataset):
         return transformed_image
 
 
+def res_save_name(args, config):
+    return 'vid_{}_{}_{}_{}_{}_{}_{}_{}.p'.format(config.data.n_points,
+                                                  config.flow.architecture.lower(),
+                                                  config.flow.net_class.lower(),
+                                                  config.flow.nl,
+                                                  config.flow.nh,
+                                                  config.data.image_size * config.data.resize,
+                                                  config.data.crop_size * config.data.crop,
+                                                  args.seed)
+
+
 def video_runner(args, config):
     # read two consecutive frames of a video, and transform them into one long vector
-    tran = torchvision.transforms.Compose([Rescale(128),
-                                           Crop(64, random=True),
-                                           ToTensor(),
-                                           Flatten()])
+    tr_list = []
+    if config.data.resize:
+        tr_list.append(Rescale(config.data.image_size))
+    if config.data.crop:
+        tr_list.append(Crop(config.data.crop_size, random=config.data.random_crop))
+    tr_list += [ToTensor(), Flatten()]
+    tran = torchvision.transforms.Compose(tr_list)
     # each of these datasets returns vectors of the form [X, Y] where X is a flattened frame in a video that
     # precedes the flattened frame Y. so the causal direction is always X -> Y
     dset = ArrowDataset(video_idx=0, transform=tran)
@@ -181,3 +196,5 @@ def video_runner(args, config):
     # predict_proba takes one argument, pack dsets into a tuple
     p, dir = model.predict_proba((dset, test_dset))
     print(dir == 'x->y')
+    result = {'p': p, 'dir': dir, 'c': dir == 'x->y'}
+    pickle.dump(result, open(os.path.join(args.output, res_save_name(args, config)), 'wb'))
