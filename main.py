@@ -10,6 +10,7 @@ from runners.cause_effect_pairs_runner import run_cause_effect_pairs
 from runners.counterfactual_trials import counterfactuals
 from runners.intervention_trials import run_interventions, plot_interventions
 from runners.simulation_runner import run_simulations, plot_simulations
+from runners.video_runner import video_runner
 
 
 def parse_input():
@@ -23,8 +24,9 @@ def parse_input():
     parser.add_argument('-p', '--pairs', action='store_true', help='Run Cause Effect Pairs experiments')
     parser.add_argument('-i', '--intervention', action='store_true', help='run intervention exp on toy example')
     parser.add_argument('-c', '--counterfactual', action='store_true', help='run counterfactual exp on toy example')
-    parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
+    parser.add_argument('-v', '--video', type=str, action='store_true', help='run video exp')
     # params to overwrite config file. useful for batch running in slurm
+    parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
     parser.add_argument('-m', '--causal-mech', type=str, default='', help='Dataset to run synthetic experiments on.')
     parser.add_argument('-a', '--algorithm', type=str, default='', help='algorithm to run')
     parser.add_argument('-n', '--n-points', type=int, default=0, help='number of simulated data points')
@@ -133,6 +135,12 @@ def main():
         # Run proposed method to perform counterfactuals on the toy example described in the manuscript
         print('running counterfactuals on toy example')
         counterfactuals(args, config)
+
+    if args.video:
+        args.doc = 'video'
+        make_and_set_dirs(args, config)
+        print('running video experiment')
+        video_runner(args, config)
 
 
 if __name__ == '__main__':

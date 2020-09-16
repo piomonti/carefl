@@ -1,0 +1,37 @@
+algorithm: 'carefl'
+
+data:
+  image_size: 128
+  crop_size: 64
+  resize: true
+  crop: true
+
+
+flow:
+  architecture: 'CL'
+  net_class: 'MLP'  # in {'MLP', 'ARMLP', 'MLP4', 'CONV}.lower()
+  nl: 3
+  nh: 50
+  batch_norm: false
+  prior_dist: 'laplace'
+  # for CL
+  scale_base: true
+  shift_base: true
+
+training:
+  epochs: 500
+  verbose: false
+  split: .8
+  seed: 0
+  batch_size: 32
+
+
+optim:
+  weight_decay: 0.000
+  optimizer: "Adam"
+  lr: 0.001
+  beta1: 0.9
+  amsgrad: false
+  scheduler: true
+
+

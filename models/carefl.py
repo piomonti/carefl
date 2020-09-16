@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 from torch.distributions import Laplace, Uniform, TransformedDistribution, SigmoidTransform
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from data.generate_synth_data import CustomSyntheticDatasetDensity
 from nflib import AffineCL, NormalizingFlowModel, MLP1layer, MAF, NSF_AR, ARMLP, MLP4
@@ -40,7 +40,9 @@ class CAReFl:
             scheduler = None
         return optimizer, scheduler
 
-    def _get_flow_arch(self, dim, parity=False):
+    def _get_flow_arch(self, parity=False):
+        # this method only gets called by _train, which in turn is only called after self.dim has been initialized
+        dim = self.dim
         # prior
         if self.config.flow.prior_dist == 'laplace':
             prior = Laplace(torch.zeros(dim).to(self.device), torch.ones(dim).to(self.device))
@@ -80,13 +82,12 @@ class CAReFl:
                 normalizing_flows.append(NormalizingFlowModel(prior, flow_list).to(self.device))
         return normalizing_flows
 
-    def _train(self, data, parity=False):
-        dim = data.shape[1]
-        dset = CustomSyntheticDatasetDensity(data.astype(np.float32))
+    def _train(self, dset, parity=False):
         train_loader = DataLoader(dset, shuffle=True, batch_size=self.config.training.batch_size)
-        flows = self._get_flow_arch(dim, parity)
+        flows = self._get_flow_arch(parity)
         all_loss_vals = []
         for flow in flows:
+            torch.manual_seed(self.config.training.seed)
             optimizer, scheduler = self._get_optimizer(flow.parameters())
             flow.train()
             loss_vals = []
@@ -94,6 +95,9 @@ class CAReFl:
                 loss_val = 0
                 for _, x in enumerate(train_loader):
                     x = x.to(self.device)
+                    if parity and self.config.flow.architecture == 'spline':
+                        # spline flows don't have parity option and should only be used with 2D numpy data:
+                        x = x[:, [1, 0]]
                     # compute loss
                     _, prior_logprob, log_det = flow(x)
                     loss = - torch.sum(prior_logprob + log_det)
@@ -111,23 +115,51 @@ class CAReFl:
             all_loss_vals.append(loss_vals)
         return flows, all_loss_vals
 
-    def _evaluate(self, flows, data):
+    def _get_params_from_idx(self, idx):
+        return self.n_layers[idx // len(self.n_hidden)], self.n_hidden[idx % len(self.n_hidden)]
+
+    def _evaluate(self, flows, test_dset, parity=False):
+        loader = DataLoader(test_dset, batch_size=128)
         best_score, best_flow, nl, nh = -1e60, flows[0], 0, 0
         for idx, flow in enumerate(flows):
-            score = np.nanmean(flow.log_likelihood(torch.tensor(data.astype(np.float32)).to(self.device)))
+            if parity and self.config.flow.architecture == 'spline':
+                # spline flows don't have parity option and should only be used with 2D numpy data:
+                score = np.nanmean(np.concatenate([flow.log_likelihood(x.to(self.device)[:, [1, 0]]) for x in loader]))
+            else:
+                score = np.nanmean(np.concatenate([flow.log_likelihood(x.to(self.device)) for x in loader]))
             if score > best_score:
                 best_flow = flow
                 best_score = score
                 nl, nh = self._get_params_from_idx(idx)  # for debug
         return best_flow, best_score, nl, nh
 
-    def _get_params_from_idx(self, idx):
-        return self.n_layers[idx // len(self.n_hidden)], self.n_hidden[idx % len(self.n_hidden)]
-
-    def predict_proba(self, data):
-        """Prediction method for pairwise causal inference using the Affine Flow LR model."""
-        p = self.flow_lr(data)
-        return p, self.direction
+    def _get_datasets(self, *input):
+        """
+        Check data type, which can be:
+            - an np.ndarray, in which case split it and wrap it into a train Dataset and and a test Dataset
+            - a Dataset, in which case duplicate it (test dataset is the same as train dataset)
+            - a tuple of Datasets, in which case just return.
+        return a train Dataset, and a test Dataset
+        """
+        if len(input) == 1:
+            input = input[0]
+        assert isinstance(input, (np.ndarray, Dataset, tuple, list))
+        if isinstance(input, np.ndarray):
+            dim = input.shape[1]
+            if self.config.training.split == 1.:
+                data_test = np.copy(input)
+            else:
+                data_test = np.copy(input[int(self.config.training.split * input.shape[0]):])
+                input = input[:int(self.config.training.split * input.shape[0])]
+            dset = CustomSyntheticDatasetDensity(input.astype(np.float32))
+            test_dset = CustomSyntheticDatasetDensity(data_test.astype(np.float32))
+            return dset, test_dset, dim
+        if isinstance(input, Dataset):
+            dim = input[0].shape[1]
+            return input, input, dim
+        if isinstance(input, (tuple, list)):
+            dim = input[0][0].shape[1]
+            return input[0], input[1], dim
 
     def _update_dir(self, p):
         self.flow = self.flow_xy if p >= 0 else self.flow_yx
@@ -137,48 +169,32 @@ class CAReFl:
         """
         for each direction, fit a flow model, then compute the log-likelihood ratio to determine causal direction
         """
-        self.dim = data.shape[1]
-        # split into training and testing data:
-        if self.config.training.split == 1.:
-            data_test = np.copy(data)
-        else:
-            data_test = np.copy(data[int(self.config.training.split * data.shape[0]):])
-            data = data[:int(self.config.training.split * data.shape[0])]
+        dset, test_dset, dim = self._get_datasets(data)
+        self.dim = dim
         # Conditional Flow Model: X->Y
-        torch.manual_seed(self.config.training.seed)
-        flows_xy, _ = self._train(data)
-        self.flow_xy, score_xy, self._nlxy, self._nhxy = self._evaluate(flows_xy, data_test)
+        flows_xy, _ = self._train(dset)
+        self.flow_xy, score_xy, self._nlxy, self._nhxy = self._evaluate(flows_xy, test_dset)
         # Conditional Flow Model: Y->X
-        torch.manual_seed(self.config.training.seed)
-        if self.config.flow.architecture == 'spline':
-            # spline flows don't have parity option and should only be used with 2D numpy data:
-            data = data[:, [1, 0]]
-            data_test = data_test[:, [1, 0]]
         flows_yx, _ = self._train(data, parity=True)
-        self.flow_yx, score_yx, self._nlyx, self._nhyx = self._evaluate(flows_yx, data_test)
+        self.flow_yx, score_yx, self._nlyx, self._nhyx = self._evaluate(flows_yx, test_dset, parity=True)
         # compute LR
         p = score_xy - score_yx
         self._update_dir(p)
         return p
 
-    def _forward_flow(self, data):
-        if self.flow is None:
-            raise ValueError('Model needs to be fitted first')
-        return self.flow.forward(torch.tensor(data.astype(np.float32)).to(self.device))[0][-1].detach().cpu().numpy()
-
-    def _backward_flow(self, latent):
-        if self.flow is None:
-            raise ValueError('Model needs to be fitted first')
-        return self.flow.backward(torch.tensor(latent.astype(np.float32)).to(self.device))[0][-1].detach().cpu().numpy()
+    def predict_proba(self, data):
+        """Prediction method for pairwise causal inference using the Affine Flow LR model."""
+        p = self.flow_lr(data)
+        return p, self.direction
 
     def fit_to_sem(self, data, dag):
         """
         assuming data columns follow the causal ordering, we fit the associated SEM
         """
-        self.dim = data.shape[1]
-        torch.manual_seed(self.config.training.seed)
-        flows, _ = self._train(data)
-        self.flow, _, self._nlxy, self._nhxy = self._evaluate(flows, data)
+        dset, test_dset, dim = self._get_datasets(data)
+        self.dim = dim
+        flows, _ = self._train(dset)
+        self.flow, _, self._nlxy, self._nhxy = self._evaluate(flows, test_dset)
 
     def predict_intervention(self, x0_val, n_samples=100, iidx=0):
         """
@@ -224,3 +240,13 @@ class CAReFl:
         # prediction (pass through the flow):
         x_post_cf = self._backward_flow(z_obs)
         return x_post_cf
+
+    def _forward_flow(self, data):
+        if self.flow is None:
+            raise ValueError('Model needs to be fitted first')
+        return self.flow.forward(torch.tensor(data.astype(np.float32)).to(self.device))[0][-1].detach().cpu().numpy()
+
+    def _backward_flow(self, latent):
+        if self.flow is None:
+            raise ValueError('Model needs to be fitted first')
+        return self.flow.backward(torch.tensor(latent.astype(np.float32)).to(self.device))[0][-1].detach().cpu().numpy()
