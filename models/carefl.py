@@ -40,7 +40,7 @@ class CAReFl:
             scheduler = None
         return optimizer, scheduler
 
-    def _get_flow_arch(self, dim):
+    def _get_flow_arch(self, dim, parity=False):
         # prior
         if self.config.flow.prior_dist == 'laplace':
             prior = Laplace(torch.zeros(dim).to(self.device), torch.ones(dim).to(self.device))
@@ -58,12 +58,12 @@ class CAReFl:
             raise NotImplementedError('net_class {} not understood.'.format(self.config.flow.net_class))
 
         # flow type
-        def affine_flow(hidden_dim):
+        def ar_flow(hidden_dim):
             if self.config.flow.architecture.lower() in ['cl', 'realnvp']:
                 return AffineCL(dim=dim, nh=hidden_dim, scale_base=self.config.flow.scale_base,
-                                shift_base=self.config.flow.shift_base, net_class=net_class)
+                                shift_base=self.config.flow.shift_base, net_class=net_class, parity=parity)
             elif self.config.flow.architecture.lower() == 'maf':
-                return MAF(dim=dim, nh=hidden_dim, net_class=net_class, parity=False)
+                return MAF(dim=dim, nh=hidden_dim, net_class=net_class, parity=parity)
             elif self.config.flow.architecture.lower() == 'spline':
                 return NSF_AR(dim=dim, hidden_dim=hidden_dim, base_network=net_class)
             else:
@@ -76,17 +76,16 @@ class CAReFl:
         for nl in self.n_layers:
             for nh in self.n_hidden:
                 # construct normalizing flows
-                flow_list = [affine_flow(nh) for _ in range(nl)]
+                flow_list = [ar_flow(nh) for _ in range(nl)]
                 normalizing_flows.append(NormalizingFlowModel(prior, flow_list).to(self.device))
         return normalizing_flows
 
-    def _train(self, data):
+    def _train(self, data, parity=False):
         dim = data.shape[1]
         dset = CustomSyntheticDatasetDensity(data.astype(np.float32))
         train_loader = DataLoader(dset, shuffle=True, batch_size=self.config.training.batch_size)
-        flows = self._get_flow_arch(dim)
+        flows = self._get_flow_arch(dim, parity)
         all_loss_vals = []
-        # print('Training {} flows'.format(len(flows)))
         for flow in flows:
             optimizer, scheduler = self._get_optimizer(flow.parameters())
             flow.train()
@@ -114,7 +113,6 @@ class CAReFl:
 
     def _evaluate(self, flows, data):
         best_score, best_flow, nl, nh = -1e60, flows[0], 0, 0
-        # print('Evaluating {} flows'.format(len(flows)))
         for idx, flow in enumerate(flows):
             score = np.nanmean(flow.log_likelihood(torch.tensor(data.astype(np.float32)).to(self.device)))
             if score > best_score:
@@ -152,8 +150,12 @@ class CAReFl:
         self.flow_xy, score_xy, self._nlxy, self._nhxy = self._evaluate(flows_xy, data_test)
         # Conditional Flow Model: Y->X
         torch.manual_seed(self.config.training.seed)
-        flows_yx, _ = self._train(data[:, [1, 0]])
-        self.flow_yx, score_yx, self._nlyx, self._nhyx = self._evaluate(flows_yx, data_test[:, [1, 0]])
+        if self.config.flow.architecture == 'spline':
+            # spline flows don't have parity option and should only be used with 2D numpy data:
+            data = data[:, [1, 0]]
+            data_test = data_test[:, [1, 0]]
+        flows_yx, _ = self._train(data, parity=True)
+        self.flow_yx, score_yx, self._nlyx, self._nhyx = self._evaluate(flows_yx, data_test)
         # compute LR
         p = score_xy - score_yx
         self._update_dir(p)

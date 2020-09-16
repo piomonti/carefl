@@ -137,9 +137,6 @@ class AffineCL(nn.Module):
         return z, log_det
 
     def backward(self, z):
-        # note that backward pass is not used during training !
-        # the code below is incorrect as it does not incorporate s_cond0 and t_cond0 above !
-        # update: code has been amended and correctly working!
         if self.checkerboard:
             z0, z1 = z[:, ::2], z[:, 1::2]
         else:
