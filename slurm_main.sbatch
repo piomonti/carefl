@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 #SBATCH --job-name=carefl
-#SBATCH --output=slurm_log/carefl.%A_%a.out
-#SBATCH --error=slurm_log/carefl.%A_%a.err
+#SBATCH --output=slurm_log/carefl.%A.out
+#SBATCH --error=slurm_log/carefl.%A.err
 #
 #SBATCH -p gpu
 #SBATCH -N 1

@@ -82,10 +82,6 @@ class Flatten:
 class SingleVideoDataset(Dataset):
     """A dataset to load a video for arrow of time detection"""
 
-    root = '/nfs/data/ilyesk/arrow/'
-    video_path = os.path.join(root, 'ArrowDataAll')
-    names = os.listdir(video_path)
-
     def __init__(self, video_idx=None, video_name=None, transform=None):
         """
         Args:
@@ -93,6 +89,9 @@ class SingleVideoDataset(Dataset):
             video_name (string): Alternatively, directly give the name of the video
             transform (callable, optional): Optional transform to be applied on a sample.
         """
+        self.root = '/nfs/data/ilyesk/arrow/'
+        video_path = os.path.join(self.root, 'ArrowDataAll')
+        names = os.listdir(self.video_path)
         if video_idx is None and video_name is None:
             raise ValueError('Please specify a video index or name')
         if video_idx is not None and video_name is not None:
@@ -124,10 +123,6 @@ class SingleVideoDataset(Dataset):
 class ArrowDataset(Dataset):
     """A dataset to load a video and return a couple of successive frames"""
 
-    root = '/nfs/data/ilyesk/arrow/'
-    video_path = os.path.join(root, 'ArrowDataAll')
-    names = os.listdir(video_path)
-
     def __init__(self, video_idx=None, video_name=None, transform=None, lag=1, split=1.):
         """
         Args:
@@ -136,6 +131,9 @@ class ArrowDataset(Dataset):
             transform (callable, optional): Optional transform to be applied on a sample.
             lag: lag between the returned frames
         """
+        self.root = '/nfs/data/ilyesk/arrow/'
+        self.video_path = os.path.join(self.root, 'ArrowDataAll')
+        self.names = os.listdir(self.video_path)
         if video_idx is None and video_name is None:
             raise ValueError('Please specify a video index or name')
         if video_idx is not None and video_name is not None:

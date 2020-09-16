@@ -143,7 +143,7 @@ class CAReFl:
         """
         assert isinstance(input, (np.ndarray, Dataset, tuple, list))
         if isinstance(input, np.ndarray):
-            dim = input.shape[1]
+            dim = input.shape[-1]
             if self.config.training.split == 1.:
                 data_test = np.copy(input)
             else:
@@ -153,10 +153,10 @@ class CAReFl:
             test_dset = CustomSyntheticDatasetDensity(data_test.astype(np.float32))
             return dset, test_dset, dim
         if isinstance(input, Dataset):
-            dim = input[0].shape[1]
+            dim = input[0].shape[-1]
             return input, input, dim
         if isinstance(input, (tuple, list)):
-            dim = input[0][0].shape[1]
+            dim = input[0][0].shape[-1]
             return input[0], input[1], dim
 
     def _update_dir(self, p):
@@ -173,7 +173,7 @@ class CAReFl:
         flows_xy, _ = self._train(dset)
         self.flow_xy, score_xy, self._nlxy, self._nhxy = self._evaluate(flows_xy, test_dset)
         # Conditional Flow Model: Y->X
-        flows_yx, _ = self._train(data, parity=True)
+        flows_yx, _ = self._train(dset, parity=True)
         self.flow_yx, score_yx, self._nlyx, self._nhyx = self._evaluate(flows_yx, test_dset, parity=True)
         # compute LR
         p = score_xy - score_yx
