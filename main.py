@@ -24,7 +24,7 @@ def parse_input():
     parser.add_argument('-p', '--pairs', action='store_true', help='Run Cause Effect Pairs experiments')
     parser.add_argument('-i', '--intervention', action='store_true', help='run intervention exp on toy example')
     parser.add_argument('-c', '--counterfactual', action='store_true', help='run counterfactual exp on toy example')
-    parser.add_argument('-v', '--video', type=str, action='store_true', help='run video exp')
+    parser.add_argument('-v', '--video', action='store_true', help='run video exp')
     # params to overwrite config file. useful for batch running in slurm
     parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
     parser.add_argument('-m', '--causal-mech', type=str, default='', help='Dataset to run synthetic experiments on.')
@@ -77,6 +77,8 @@ def read_config(args):
         return 'pairs.yaml'
     if args.counterfactual:
         return 'counterfactuals.yaml'
+    if args.video:
+        return 'video.yaml'
 
 
 def main():

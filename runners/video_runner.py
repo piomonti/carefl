@@ -172,8 +172,8 @@ def video_runner(args, config):
     # read two consecutive frames of a video, and transform them into one long vector
     tran = torchvision.transforms.Compose([Rescale(128),
                                            Crop(64, random=True),
-                                           Flatten(),
-                                           ToTensor()])
+                                           ToTensor(),
+                                           Flatten()])
     # each of these datasets returns vectors of the form [X, Y] where X is a flattened frame in a video that
     # precedes the flattened frame Y. so the causal direction is always X -> Y
     dset = ArrowDataset(video_idx=0, transform=tran)

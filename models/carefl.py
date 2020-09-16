@@ -133,7 +133,7 @@ class CAReFl:
                 nl, nh = self._get_params_from_idx(idx)  # for debug
         return best_flow, best_score, nl, nh
 
-    def _get_datasets(self, *input):
+    def _get_datasets(self, input):
         """
         Check data type, which can be:
             - an np.ndarray, in which case split it and wrap it into a train Dataset and and a test Dataset
@@ -141,8 +141,6 @@ class CAReFl:
             - a tuple of Datasets, in which case just return.
         return a train Dataset, and a test Dataset
         """
-        if len(input) == 1:
-            input = input[0]
         assert isinstance(input, (np.ndarray, Dataset, tuple, list))
         if isinstance(input, np.ndarray):
             dim = input.shape[1]
