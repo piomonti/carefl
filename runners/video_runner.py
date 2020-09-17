@@ -184,9 +184,10 @@ class VideoFeatures:
         self.split = config.training.split
         self.train = train
 
-        raw_data = torch.load(os.path.join(self.root, 'video_{}_{}_{}.pth'.format(config.data.video_idx,
-                                                                                  config.data.image_size,
-                                                                                  config.data.crop_size)))
+        raw_data = torch.load(os.path.join(self.root, 'video_{}_{}_{}.pt'.format(config.data.video_idx,
+                                                                                 config.data.image_size,
+                                                                                 config.data.crop_size)))
+        raw_data = raw_data.detach()
         if pca:
             p = PCA(n_components=n_components)
             raw_data = torch.from_numpy(p.fit_transform(raw_data.numpy()))
@@ -218,25 +219,42 @@ class VideoFeatures:
 
 
 def res_save_name(args, config):
-    return 'vid_{}_{}_{}_{}_{}_{}_{}_{}.p'.format(config.data.video_idx,
-                                                  config.data.image_size,
-                                                  config.data.crop_size,
-                                                  config.flow.architecture.lower(),
-                                                  config.flow.net_class.lower(),
-                                                  config.flow.nl,
-                                                  config.flow.nh,
-                                                  args.seed)
+    pca = 'f' if not config.data.pca else 't{}'.format(config.data.n_components)
+    return 'vid_{}_{}_{}_{}__{}_{}_{}_{}_{}.p'.format(config.data.image_size,
+                                                      config.data.crop_size,
+                                                      pca,
+                                                      config.data.lag,
+                                                      config.flow.architecture.lower(),
+                                                      config.flow.net_class.lower(),
+                                                      config.flow.nl,
+                                                      config.flow.nh,
+                                                      args.seed)
 
 
 def video_runner(args, config):
     # each of these datasets returns vectors of features of the form [X, Y] where X and Y are features of frames of a
     # video computed using GoogLeNet, such that X precedes Y in the video
-    train_dset = VideoFeatures(config, train=True)
-    test_dset = VideoFeatures(config, train=False)
+    train_dset = VideoFeatures(config, train=True, pca=config.data.pca, n_components=config.data.n_components)
+    test_dset = VideoFeatures(config, train=False, pca=config.data.pca, n_components=config.data.n_components)
     # load a CAReFl model
     model = CAReFl(config)
     # predict_proba takes one argument, pack dsets into a tuple
     p, direction = model.predict_proba((train_dset, test_dset))
-    print(direction == 'x->y')
-    result = {'p': p, 'dir': direction, 'c': direction == 'x->y'}
-    pickle.dump(result, open(os.path.join(args.output, res_save_name(args, config)), 'wb'))
+    true_dir = 'x->y' if config.data.video_idx < 155 else 'y->x'
+    print(direction == true_dir)
+    result = {'p': p, 'dir': direction, 'c': direction == true_dir}
+    path = os.path.join(args.output, config.data.video_idx)
+    os.makedirs(path, exist_ok=True)
+    pickle.dump(result, open(os.path.join(path, res_save_name(args, config)), 'wb'))
+
+
+def plot_video(args, config):
+    cs = []
+    ps = []
+    for seed in range(20):
+        args.seed = seed
+        res = pickle.load(open(os.path.join(args.output, config.data.video_idx, res_save_name(args, config)), 'rb'))
+        cs.append(res['c'])
+        ps.append(res['p'])
+    print("Average correct:", np.mean(cs))
+    print("sequence of p's:", ps)

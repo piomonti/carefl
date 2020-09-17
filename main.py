@@ -10,7 +10,7 @@ from runners.cause_effect_pairs_runner import run_cause_effect_pairs
 from runners.counterfactual_trials import counterfactuals
 from runners.intervention_trials import run_interventions, plot_interventions
 from runners.simulation_runner import run_simulations, plot_simulations
-from runners.video_runner import video_runner
+from runners.video_runner import video_runner, plot_video
 
 
 def parse_input():
@@ -29,7 +29,8 @@ def parse_input():
     parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
     parser.add_argument('-m', '--causal-mech', type=str, default='', help='Dataset to run synthetic experiments on.')
     parser.add_argument('-a', '--algorithm', type=str, default='', help='algorithm to run')
-    parser.add_argument('-n', '--n-points', type=int, default=0, help='number of simulated data points')
+    parser.add_argument('-n', '--n-points', type=int, default=0,
+                        help='number of simulated data points / also controls video_idx for arrow of time')
 
     return parser.parse_args()
 
@@ -40,7 +41,8 @@ def debug_options(args, config):
     if args.algorithm != '':
         config.algorithm = args.algorithm
     if args.n_points != 0:
-        config.data.n_points = args.n_points
+        config.data.n_points = args.n_points  # for interventions / simulations
+        config.data.video_idx = args.n_points  # for arrow of time
 
 
 def dict2namespace(config):
@@ -142,8 +144,12 @@ def main():
     if args.video:
         args.doc = 'video'
         make_and_set_dirs(args, config)
-        print('running video experiment')
-        video_runner(args, config)
+        config.training.seed = args.seed
+        if not args.plot:
+            print('running video experiment')
+            video_runner(args, config)
+        else:
+            plot_video(args, config)
 
 
 if __name__ == '__main__':
