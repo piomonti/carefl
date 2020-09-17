@@ -303,7 +303,8 @@ class SingleVideoDataset(Dataset):
         """
         self.root = '/nfs/gatsbystor/ilyesk/arrow/'
         self.video_path = os.path.join(self.root, 'ArrowDataAll')
-        self.names = os.listdir(self.video_path)
+        # sort such that first 155 vids are forwards, remaining 25 are backward
+        self.names = sorted(os.listdir(self.video_path), reverse=True)
         if video_idx is None and video_name is None:
             raise ValueError('Please specify a video index or name')
         if video_idx is not None and video_name is not None:
@@ -351,7 +352,7 @@ def compute_features(video_idx=0, image_size=500, crop_size=224, path="data/vide
         feat = pgnet(x)
         features.append(feat)
     features = torch.cat(features, dim=0)
-    name = 'video_{}_{}_{}.pth'.format(video_idx, image_size, crop_size)
+    name = 'video_{}_{}_{}.pt'.format(video_idx, image_size, crop_size)
     print('Saving file: {}'.format(os.path.join(path, name)))
     torch.save(features, os.path.join(path, name))
 
