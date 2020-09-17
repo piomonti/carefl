@@ -1,11 +1,10 @@
 algorithm: 'carefl'
 
 data:
-  image_size: 128
-  crop_size: 64
-  resize: true
-  crop: true
-  random_crop: true
+  video_idx: 0
+  image_size: 500
+  crop_size: 224
+  lag: 1
 
 
 flow:

@@ -1,10 +1,11 @@
 import numpy as np
 import os
-import torch
-import torchvision
-from skimage import io, transform
-from torch.utils.data import Dataset
 import pickle
+import torch
+from skimage import io
+from skimage import transform as sktransform
+from sklearn.decomposition import PCA
+from torch.utils.data import Dataset
 
 from models import CAReFl
 
@@ -32,7 +33,7 @@ class Rescale:
         else:
             new_h, new_w = self.output_size
         new_h, new_w = int(new_h), int(new_w)
-        return [transform.resize(image, (new_h, new_w)).squeeze() for image in images]
+        return [sktransform.resize(image, (new_h, new_w)).squeeze() for image in images]
 
 
 class Crop:
@@ -167,34 +168,75 @@ class ArrowDataset(Dataset):
         return transformed_image
 
 
+class VideoFeatures:
+    def __init__(self, config, train=True, transform=None, pca=False, n_components=1):
+        """
+        Args:
+            config: config file containing video_idx, lag, and split
+            transform: Optional transform to be applied on a sample.
+            pca: whether to apply pca to the features
+            n_components: number of components to keep in the pca
+        """
+        self.root = 'data/video/'
+        self.config = config
+        self.video_idx = config.data.video_idx
+        self.lag = config.data.lag
+        self.split = config.training.split
+        self.train = train
+
+        raw_data = torch.load(os.path.join(self.root, 'video_{}_{}_{}.pth'.format(config.data.video_idx,
+                                                                                  config.data.image_size,
+                                                                                  config.data.crop_size)))
+        if pca:
+            p = PCA(n_components=n_components)
+            raw_data = torch.from_numpy(p.fit_transform(raw_data.numpy()))
+
+        if isinstance(self.lag, int):
+            self.lag = [self.lag]
+        data = []
+        for lag in self.lag:
+            data.append(torch.cat([raw_data[:-lag], raw_data[lag:]], dim=1))
+        data = torch.cat(data, dim=0)
+
+        self.raw_data = raw_data
+
+        if self.split < 1:
+            self.data = data[:int(self.split * len(data))] if train else data[int(self.split * len(data)):]
+        else:
+            self.data = data
+
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        sample = self.data[idx]
+        if self.transform:
+            sample = self.transform(sample)
+        return sample
+
+
 def res_save_name(args, config):
-    return 'vid_{}_{}_{}_{}_{}_{}_{}_{}.p'.format(config.data.n_points,
+    return 'vid_{}_{}_{}_{}_{}_{}_{}_{}.p'.format(config.data.video_idx,
+                                                  config.data.image_size,
+                                                  config.data.crop_size,
                                                   config.flow.architecture.lower(),
                                                   config.flow.net_class.lower(),
                                                   config.flow.nl,
                                                   config.flow.nh,
-                                                  config.data.image_size * config.data.resize,
-                                                  config.data.crop_size * config.data.crop,
                                                   args.seed)
 
 
 def video_runner(args, config):
-    # read two consecutive frames of a video, and transform them into one long vector
-    tr_list = []
-    if config.data.resize:
-        tr_list.append(Rescale(config.data.image_size))
-    if config.data.crop:
-        tr_list.append(Crop(config.data.crop_size, random=config.data.random_crop))
-    tr_list += [ToTensor(), Flatten()]
-    tran = torchvision.transforms.Compose(tr_list)
-    # each of these datasets returns vectors of the form [X, Y] where X is a flattened frame in a video that
-    # precedes the flattened frame Y. so the causal direction is always X -> Y
-    dset = ArrowDataset(video_idx=0, transform=tran)
-    test_dset = ArrowDataset(video_idx=0, split=.5, transform=tran)
+    # each of these datasets returns vectors of features of the form [X, Y] where X and Y are features of frames of a
+    # video computed using GoogLeNet, such that X precedes Y in the video
+    train_dset = VideoFeatures(config, train=True)
+    test_dset = VideoFeatures(config, train=False)
     # load a CAReFl model
     model = CAReFl(config)
     # predict_proba takes one argument, pack dsets into a tuple
-    p, direction = model.predict_proba((dset, test_dset))
+    p, direction = model.predict_proba((train_dset, test_dset))
     print(direction == 'x->y')
     result = {'p': p, 'dir': direction, 'c': direction == 'x->y'}
     pickle.dump(result, open(os.path.join(args.output, res_save_name(args, config)), 'wb'))
