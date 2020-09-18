@@ -32,7 +32,7 @@ def fig_save_name(config):
 
 def run_simulations(args, config):
     n_points = config.data.n_points
-    n_sims = args.n_sims
+    n_sims = n_valid_sims = args.n_sims
     algo = config.algorithm
     causal_mechanism = config.data.causal_mech
     reci_form_dict = {'linear': 'poly', 'hoyer2009': 'poly', 'nueralnet_l1': 'GP'}
@@ -54,10 +54,14 @@ def run_simulations(args, config):
         else:
             raise ValueError('Unknown algorithm')
         p, direction = mod.predict_proba(data=data)
-        per_correct += direction == mod_dir
-        results['p'].append(p)
-        results['c'].append(1. * (direction == mod_dir))
-    results['correct'] = per_correct / n_sims
+        if not np.isnan(p):
+            per_correct += direction == mod_dir
+            results['p'].append(p)
+            results['c'].append(1. * (direction == mod_dir))
+        else:
+            n_valid_sims -= 1
+    results['correct'] = per_correct / n_valid_sims
+    print(results['correct'])
     pickle.dump(results, open(os.path.join(args.output, res_save_name(config, algo)), 'wb'))
 
 

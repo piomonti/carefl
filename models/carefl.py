@@ -113,6 +113,7 @@ class CAReFl:
                     print('epoch {}/{} \tloss: {}'.format(e, self.epochs, loss_val))
                 loss_vals.append(loss_val)
             all_loss_vals.append(loss_vals)
+        print(all_loss_vals)
         return flows, all_loss_vals
 
     def _get_params_from_idx(self, idx):
@@ -120,17 +121,24 @@ class CAReFl:
 
     def _evaluate(self, flows, test_dset, parity=False):
         loader = DataLoader(test_dset, batch_size=128)
-        best_score, best_flow, nl, nh = -1e60, flows[0], 0, 0
+        scores = []
         for idx, flow in enumerate(flows):
             if parity and self.config.flow.architecture == 'spline':
                 # spline flows don't have parity option and should only be used with 2D numpy data:
                 score = np.nanmean(np.concatenate([flow.log_likelihood(x.to(self.device)[:, [1, 0]]) for x in loader]))
             else:
                 score = np.nanmean(np.concatenate([flow.log_likelihood(x.to(self.device)) for x in loader]))
-            if score > best_score:
-                best_flow = flow
-                best_score = score
-                nl, nh = self._get_params_from_idx(idx)  # for debug
+            scores.append(score)
+        try:
+            # in case all scores are nan, this will raise a ValueError
+            idx = np.nanargmax(scores)
+        except ValueError:
+            # arbitrarily pick flows[0], this doesn't matter since best_score = nan, which will
+            idx = 0
+        # unlike nanargmax, nanmax only raises a RuntimeWarning when all scores are nan, and will return nan
+        best_score = np.nanmax(scores)
+        best_flow = flows[idx]
+        nl, nh = self._get_params_from_idx(idx)  # for debug
         return best_flow, best_score, nl, nh
 
     def _get_datasets(self, input):
