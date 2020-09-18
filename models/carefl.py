@@ -87,7 +87,6 @@ class CAReFl:
         flows = self._get_flow_arch(parity)
         all_loss_vals = []
         for flow in flows:
-            torch.manual_seed(self.config.training.seed)
             optimizer, scheduler = self._get_optimizer(flow.parameters())
             flow.train()
             loss_vals = []
