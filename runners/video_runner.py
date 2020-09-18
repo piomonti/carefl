@@ -243,7 +243,7 @@ def video_runner(args, config):
     true_dir = 'x->y' if config.data.video_idx < 155 else 'y->x'
     print(direction == true_dir)
     result = {'p': p, 'dir': direction, 'c': direction == true_dir}
-    path = os.path.join(args.output, config.data.video_idx)
+    path = os.path.join(args.output, str(config.data.video_idx))
     os.makedirs(path, exist_ok=True)
     pickle.dump(result, open(os.path.join(path, res_save_name(args, config)), 'wb'))
 
@@ -253,7 +253,7 @@ def plot_video(args, config):
     ps = []
     for seed in range(20):
         args.seed = seed
-        res = pickle.load(open(os.path.join(args.output, config.data.video_idx, res_save_name(args, config)), 'rb'))
+        res = pickle.load(open(os.path.join(args.output, str(config.data.video_idx), res_save_name(args, config)), 'rb'))
         cs.append(res['c'])
         ps.append(res['p'])
     print("Average correct:", np.mean(cs))
