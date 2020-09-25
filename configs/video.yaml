@@ -11,7 +11,7 @@ data:
 
 flow:
   architecture: 'CL'
-  net_class: 'MLP'  # in {'MLP', 'ARMLP', 'MLP4', 'CONV}.lower()
+  net_class: 'MLP'  # in {'MLP', 'ARMLP', 'MLP4'}.lower()
   nl: 3
   nh: 50
   batch_norm: false
@@ -19,6 +19,7 @@ flow:
   # for CL
   scale_base: true
   shift_base: true
+  scale: true
 
 training:
   epochs: 500

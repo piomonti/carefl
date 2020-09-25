@@ -63,7 +63,8 @@ class CAReFl:
         def ar_flow(hidden_dim):
             if self.config.flow.architecture.lower() in ['cl', 'realnvp']:
                 return AffineCL(dim=dim, nh=hidden_dim, scale_base=self.config.flow.scale_base,
-                                shift_base=self.config.flow.shift_base, net_class=net_class, parity=parity)
+                                shift_base=self.config.flow.shift_base, net_class=net_class, parity=parity,
+                                scale=self.config.flow.scale)
             elif self.config.flow.architecture.lower() == 'maf':
                 return MAF(dim=dim, nh=hidden_dim, net_class=net_class, parity=parity)
             elif self.config.flow.architecture.lower() == 'spline':
@@ -112,7 +113,6 @@ class CAReFl:
                     print('epoch {}/{} \tloss: {}'.format(e, self.epochs, loss_val))
                 loss_vals.append(loss_val)
             all_loss_vals.append(loss_vals)
-        print(all_loss_vals)
         return flows, all_loss_vals
 
     def _get_params_from_idx(self, idx):
