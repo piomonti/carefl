@@ -170,7 +170,7 @@ class CAReFl:
         self.flow = self.flow_xy if p >= 0 else self.flow_yx
         self.direction = 'x->y' if p >= 0 else 'y->x'
 
-    def flow_lr(self, data):
+    def flow_lr(self, data, return_scores=False):
         """
         for each direction, fit a flow model, then compute the log-likelihood ratio to determine causal direction
         """
@@ -187,14 +187,21 @@ class CAReFl:
         # compute LR
         p = score_xy - score_yx
         self._update_dir(p)
-        return p
+        if return_scores:
+            return p, score_xy, score_yx
+        else:
+            return p
 
-    def predict_proba(self, data):
+    def predict_proba(self, data, return_scores=False):
         """Prediction method for pairwise causal inference using the Affine Flow LR model."""
-        p = self.flow_lr(data)
-        return p, self.direction
+        if return_scores:
+            p, sxy, syx = self.flow_lr(data, return_scores=return_scores)
+            return p, self.direction, sxy, syx
+        else:
+            p = self.flow_lr(data, return_scores=return_scores)
+            return p, self.direction
 
-    def fit_to_sem(self, data, dag):
+    def fit_to_sem(self, data, dag=None, return_scores=False):
         """
         assuming data columns follow the causal ordering, we fit the associated SEM
         """
@@ -202,7 +209,8 @@ class CAReFl:
         self.dim = dim
         torch.manual_seed(self.config.training.seed)
         flows, _ = self._train(dset)
-        self.flow, _, self._nlxy, self._nhxy = self._evaluate(flows, test_dset)
+        self.flow, score, self._nlxy, self._nhxy = self._evaluate(flows, test_dset)
+        return score if return_scores else None
 
     def predict_intervention(self, x0_val, n_samples=100, iidx=0):
         """

@@ -234,16 +234,15 @@ def res_save_name(args, config):
 def video_runner(args, config):
     # each of these datasets returns vectors of features of the form [X, Y] where X and Y are features of frames of a
     # video computed using GoogLeNet, such that X precedes Y in the video
-    config.training.seed = args.seed
     train_dset = VideoFeatures(config, train=True, pca=config.data.pca, n_components=config.data.n_components)
     test_dset = VideoFeatures(config, train=False, pca=config.data.pca, n_components=config.data.n_components)
     # load a CAReFl model
     model = CAReFl(config)
     # predict_proba takes one argument, pack dsets into a tuple
-    p, direction = model.predict_proba((train_dset, test_dset))
+    p, direction, sxy, syx = model.predict_proba((train_dset, test_dset), return_scores=True)
     true_dir = 'x->y' if config.data.video_idx < 155 else 'y->x'
     print(direction == true_dir)
-    result = {'p': p, 'dir': direction, 'c': direction == true_dir}
+    result = {'p': p, 'dir': direction, 'c': direction == true_dir, 'sxy': sxy, 'syx': syx}
     path = os.path.join(args.output, str(config.data.video_idx))
     os.makedirs(path, exist_ok=True)
     pickle.dump(result, open(os.path.join(path, res_save_name(args, config)), 'wb'))
@@ -252,11 +251,15 @@ def video_runner(args, config):
 def plot_video(args, config):
     cs = []
     ps = []
+    sxys = []
+    syxs = []
     for seed in range(20):
         args.seed = seed
         res = pickle.load(open(os.path.join(args.output, str(config.data.video_idx), res_save_name(args, config)), 'rb'))
         cs.append(res['c'])
         ps.append(res['p'])
+        sxys.append(res['sxy'] if 'sxy' in res.keys() else 0)
+        syxs.append(res['syx'] if 'syx' in res.keys() else 0)
     print("Average correct:", np.mean(cs))
     print("Average p", np.nanmean(ps))
     print("sequence of p's:", ps)
