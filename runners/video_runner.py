@@ -234,6 +234,7 @@ def res_save_name(args, config):
 def video_runner(args, config):
     # each of these datasets returns vectors of features of the form [X, Y] where X and Y are features of frames of a
     # video computed using GoogLeNet, such that X precedes Y in the video
+    config.training.seed = args.seed
     train_dset = VideoFeatures(config, train=True, pca=config.data.pca, n_components=config.data.n_components)
     test_dset = VideoFeatures(config, train=False, pca=config.data.pca, n_components=config.data.n_components)
     # load a CAReFl model
@@ -257,4 +258,5 @@ def plot_video(args, config):
         cs.append(res['c'])
         ps.append(res['p'])
     print("Average correct:", np.mean(cs))
+    print("Average p", np.nanmean(ps))
     print("sequence of p's:", ps)

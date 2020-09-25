@@ -15,7 +15,7 @@ def run_single_pair(config, pair_id, remove_outliers=False, scale_dat=True, verb
     # polish format of pair_id
     pair_id = str(pair_id)
     pair_id = '0' * (4 - len(pair_id)) + pair_id
-    dat_id = np.loadtxt(PairDataDir + 'pair' + str(pair_id) + '.txt')
+    dat_id = np.loadtxt(PairDataDir + 'pair' + str(pair_id) + '.txt')[:, :2]
     dir_id = open(PairDataDir + 'pair' + str(pair_id) + '_des.txt', 'r').read().lower()
 
     # determine causal direction (from dir_id file):

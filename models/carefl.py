@@ -177,9 +177,11 @@ class CAReFl:
         dset, test_dset, dim = self._get_datasets(data)
         self.dim = dim
         # Conditional Flow Model: X->Y
+        torch.manual_seed(self.config.training.seed)
         flows_xy, _ = self._train(dset)
         self.flow_xy, score_xy, self._nlxy, self._nhxy = self._evaluate(flows_xy, test_dset)
         # Conditional Flow Model: Y->X
+        torch.manual_seed(self.config.training.seed)
         flows_yx, _ = self._train(dset, parity=True)
         self.flow_yx, score_yx, self._nlyx, self._nhyx = self._evaluate(flows_yx, test_dset, parity=True)
         # compute LR
@@ -198,6 +200,7 @@ class CAReFl:
         """
         dset, test_dset, dim = self._get_datasets(data)
         self.dim = dim
+        torch.manual_seed(self.config.training.seed)
         flows, _ = self._train(dset)
         self.flow, _, self._nlxy, self._nhxy = self._evaluate(flows, test_dset)
 

@@ -61,7 +61,6 @@ def run_simulations(args, config):
         else:
             n_valid_sims -= 1
     results['correct'] = per_correct / n_valid_sims
-    print(results['correct'])
     pickle.dump(results, open(os.path.join(args.output, res_save_name(config, algo)), 'wb'))
 
 
