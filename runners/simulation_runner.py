@@ -2,11 +2,10 @@
 #
 #
 #
-import os
-import pickle
-
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import pickle
 import seaborn as sns
 
 from data.generate_synth_data import gen_synth_causal_dat
@@ -84,7 +83,8 @@ def plot_simulations(args, config):
         for a in args.sim_list:
             for n in nvals:
                 config.data.n_points = n
-                res = pickle.load(open(os.path.join(args.run, 'simulations', s, a, res_save_name(config, to_algos(a))), 'rb'))
+                res = pickle.load(
+                    open(os.path.join(args.run, 'simulations', s, a, res_save_name(config, to_algos(a))), 'rb'))
                 res_all[s][to_algos(a)].append(res['correct'])
     # prepare plot
     sns.set_style("whitegrid")

@@ -102,7 +102,8 @@ def plot_interventions(args, config):
     for a in args.int_list:
         for n in n_obs_list:
             config.data.n_points = n
-            res = pickle.load(open(os.path.join(args.run, 'interventions', a, res_save_name(config, a)), 'rb'))
+            res = pickle.load(
+                open(os.path.join(args.run, 'interventions', a, res_save_name(config, to_models(a))), 'rb'))
             for x in variables:
                 results[to_models(a)][x].append(res[x])
     # produce plot
