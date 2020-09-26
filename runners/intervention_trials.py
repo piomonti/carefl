@@ -14,40 +14,48 @@ from models import ANM, CAReFl
 
 def res_save_name(config, algo):
     if algo.lower() != 'carefl':
-        return 'int_{}{}.p'.format(config.data.n_points, 'r' * config.data.random)
-    return 'int_{}{}_{}_{}_{}_{}.p'.format(config.data.n_points,
-                                           'r' * config.data.random,
-                                           config.flow.architecture.lower(),
-                                           config.flow.net_class.lower(),
-                                           config.flow.nl,
-                                           config.flow.nh)
+        return 'int_{}{}{}.p'.format(config.data.n_points, 'r' * config.data.random, 'm' * config.data.multiplicative)
+    return 'int_{}{}{}_{}_{}_{}_{}.p'.format(config.data.n_points,
+                                             'r' * config.data.random,
+                                             'm' * config.data.multiplicative,
+                                             config.flow.architecture.lower(),
+                                             config.flow.net_class.lower(),
+                                             config.flow.nl,
+                                             config.flow.nh)
 
 
 def fig_save_name(config):
-    return 'int_mse_{}{}_{}_{}_{}_{}.pdf'.format('r' * config.data.random,
-                                                 'e' * config.data.expected,
-                                                 config.flow.architecture.lower(),
-                                                 config.flow.net_class.lower(),
-                                                 config.flow.nl,
-                                                 config.flow.nh)
+    return 'int_mse_{}{}{}_{}_{}_{}_{}.pdf'.format('r' * config.data.random,
+                                                   'e' * config.data.expected,
+                                                   'm' * config.data.multiplicative,
+                                                   config.flow.architecture.lower(),
+                                                   config.flow.net_class.lower(),
+                                                   config.flow.nl,
+                                                   config.flow.nh)
 
 
-def intervention_sem(n_obs, dim=4, seed=0, random=True):
+def intervention_sem(n_obs, dim=4, seed=0, random=True, multiplicative=False):
     if dim == 4:
         # generate some 4D data according to the following SEM
         #
         # X_1 = N_1
         # X_2 = N_2
-        # X_3 = X_1 + c_0*X_2^3 + N_3   -  c_0 random coeff
-        # X_4 = c_1*X_1^2 - X_2 + N_4   -  c_1 random coeff
+        # X_3 = (X_1 + c_0*X_2^3) +/* N_3   -  c_0 random coeff
+        # X_4 = (c_1*X_1^2 - X_2) +/* N_4   -  c_1 random coeff
         np.random.seed(seed)
         # causes
         X_1 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
         X_2 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
         # effects
         coeffs = np.random.uniform(.1, .9, 2) if random else [.5, .5]
-        X_3 = X_1 + coeffs[0] * (X_2 * X_2 * X_2) + np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
-        X_4 = -X_2 + coeffs[1] * (X_1 * X_1) + np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        X_3 = X_1 + coeffs[0] * (X_2 * X_2 * X_2)
+        X_4 = -X_2 + coeffs[1] * (X_1 * X_1)
+        if multiplicative:
+            X_3 *= np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+            X_4 *= np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        else:
+            X_3 += np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+            X_4 += np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
         # create the adjacency matrix
         dag = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0]])
         return np.vstack((X_1, X_2, X_3, X_4)).T, coeffs, dag
@@ -60,7 +68,8 @@ def run_interventions(args, config):
     model = config.algorithm.lower()
     print("** {} observations **".format(n_obs))
     # generate coeffcients for equation (12), and data from that SEM
-    data, coeffs, dag = intervention_sem(n_obs, dim=4, seed=config.data.seed, random=config.data.random)
+    data, coeffs, dag = intervention_sem(n_obs, dim=4, seed=config.data.seed, random=config.data.random,
+                                         multiplicative=config.data.multiplicative)
     print("fitting a {} model".format(model))
     # fit to an affine autoregressive flow or ANM with gp/linear functions
     mod = CAReFl(config) if model == 'carefl' else ANM(method=model)

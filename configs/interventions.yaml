@@ -5,8 +5,9 @@ data:
   n_points: 250
   seed: 0
   # only relevant for interventions
-  random: false
+  random: true
   expected: false
+  multiplicative: false
 
 
 # only relevant for flows
