@@ -1,12 +1,10 @@
 algorithm: 'CAReFl'  # in {'CAReFl', 'LRHyv', 'notears', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
 
 data:
-  causal_mech: 'linear'  # in {linear, hoyer2009, nueralnet_l1}
-  n_points: 250
-  seed: 0
-  # only relevant for interventions
-  random: false
-  expected: false
+  pair_id: 0
+  remove_outliers: false
+  scale: true
+  verbose: true
 
 
 # only relevant for flows
@@ -25,7 +23,7 @@ flow:
 
 training:
   epochs: 750
-  verbose: true
+  verbose: false
   split: .8
   seed: 0
   batch_size: 128

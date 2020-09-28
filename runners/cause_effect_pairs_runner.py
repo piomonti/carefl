@@ -1,4 +1,6 @@
 import numpy as np
+import os
+import pickle
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.preprocessing import scale
 
@@ -7,17 +9,29 @@ from models.carefl import CAReFl
 PairDataDir = 'data/pairs/'
 
 
-def run_single_pair(config, pair_id, remove_outliers=False, scale_dat=True, verbose=False):
-    """
-    run cause effect discovery for given pair id
-    """
+def res_save_name(args, config):
+    return 'pair_{}_{}_{}_{}_{}_{}.p'.format(args.n_points,
+                                             config.flow.architecture.lower(),
+                                             config.flow.net_class.lower(),
+                                             config.flow.nl,
+                                             config.flow.nh,
+                                             args.seed)
+
+
+def run_cause_effect_pairs(args, config):
+    # skip these pairs, as indicated by Mooij et al (2016) because the variables
+    # are not bivariate (i.e., X and Y are not univariate)
+    skip_pairs = [52, 54, 55]
+    i = config.data.pair_id
+
+    if i in skip_pairs:
+        return
 
     # polish format of pair_id
-    pair_id = str(pair_id)
+    pair_id = str(i)
     pair_id = '0' * (4 - len(pair_id)) + pair_id
     dat_id = np.loadtxt(PairDataDir + 'pair' + str(pair_id) + '.txt')[:, :2]
     dir_id = open(PairDataDir + 'pair' + str(pair_id) + '_des.txt', 'r').read().lower()
-
     # determine causal direction (from dir_id file):
     dir_id = dir_id.replace('\n', '')
     dir_id = dir_id.replace(':', '')
@@ -26,54 +40,46 @@ def run_single_pair(config, pair_id, remove_outliers=False, scale_dat=True, verb
         dir_id = 'x-->y'
     elif ('y-->x' in dir_id) | ('y->x' in dir_id) | ('x<-y' in dir_id):
         dir_id = 'y-->x'
-
-    if remove_outliers:
+    if config.data.remove_outliers:
         print('removing outliers')
         clf = LocalOutlierFactor(n_neighbors=20, contamination=0.05)
         y_pred = clf.fit_predict(dat_id)
         dat_id = dat_id[np.where(y_pred == 1)[0]]
-
-    # scale data:
-    if scale_dat:
+    if config.data.scale:
+        # scale data:
         dat_id = scale(dat_id)
-    #   dat_id = MinMaxScaler().fit_transform( dat_id )
-
-    if verbose:
+        # dat_id = MinMaxScaler().fit_transform( dat_id )
+    if config.data.verbose:
         print('Running experiments for CE Pair: ' + pair_id + ' with n=' + str(dat_id.shape[0]) + ' samples')
         print('True causal direction: ' + dir_id)
         print('baseline dist: ' + config.flow.prior_dist)
 
     model = CAReFl(config)
-    p = model.flow_lr(dat_id)
-    pred_model = model.direction
-    return pred_model, dir_id, np.minimum(np.unique(dat_id[:, 0]).shape[0] / float(dat_id.shape[0]),
-                                                   np.unique(dat_id[:, 1]).shape[0] / float(dat_id.shape[0]))
+    p, pred_model, sxy, syx = model.predict_proba(dat_id, return_scores=True)
+
+    results = {'p': p, 'c': pred_model == dir_id, 'dir': dir_id, 'sxy': sxy, 'syx': syx}
+    path = os.path.join(args.output, str(i))
+    os.makedirs(path, exist_ok=True)
+    pickle.dump(results, open(os.path.join(path, res_save_name(args, config)), 'wb'))
 
 
-def run_cause_effect_pairs(args, config):
-    # define some simulation parameters
-    skip_pairs = [52, 54, 55]
-    # skip these pairs, as indicated by Mooij et al (2016) because the variables
-    # are not bivariate (i.e., X and Y are not univariate)
-    correct_count = 0
-    running_count = 0
-    binary_cutoff = .15
-    correct_count_nobinary = 0
-    running_count_nobinary = 0
-    for i in range(1, 108):
-        if i in skip_pairs:
-            pass
-        else:
-            pred_model, true_model, cts_ratio = run_single_pair(config, i, remove_outliers=False, scale_dat=True,
-                                                                     verbose=True)
+def plot_pairs(args, config):
+    cs = []
+    ps = []
+    sxys = []
+    syxs = []
+    for seed in range(1):
+        args.seed = seed
+        res = pickle.load(open(os.path.join(args.output, str(config.data.pair_idx), res_save_name(args, config)), 'rb'))
+        cs.append(res['c'])
+        ps.append(res['p'])
+        sxys.append(res['sxy'] if 'sxy' in res.keys() else 0)
+        syxs.append(res['syx'] if 'syx' in res.keys() else 0)
+    print("Average correct:", np.mean(cs))
+    print("Average p", np.nanmean(ps))
+    print("sequence of p's:", ps)
 
-            running_count += 1
-            if cts_ratio > binary_cutoff:
-                running_count_nobinary += 1
-            if pred_model.replace('-', '') == true_model.replace('-', ''):
-                print('Correct!')
-                correct_count += 1
-                if cts_ratio > binary_cutoff:
-                    correct_count_nobinary += 1
-            # TODO: is correctrCount_nobinary important?
-            print('running mean: ' + str(float(correct_count) / running_count))
+
+def plot_all_pairs(args, config):
+    # TODO: implement a function to plot accuracy on all pairs
+    pass

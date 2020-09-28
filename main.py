@@ -6,7 +6,7 @@ import os
 import torch
 import yaml
 
-from runners.cause_effect_pairs_runner import run_cause_effect_pairs
+from runners.cause_effect_pairs_runner import run_cause_effect_pairs, plot_pairs
 from runners.counterfactual_trials import counterfactuals
 from runners.intervention_trials import run_interventions, plot_interventions
 from runners.simulation_runner import run_simulations, plot_simulations
@@ -29,8 +29,8 @@ def parse_input():
     parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
     parser.add_argument('-m', '--causal-mech', type=str, default='', help='Dataset to run synthetic experiments on.')
     parser.add_argument('-a', '--algorithm', type=str, default='', help='algorithm to run')
-    parser.add_argument('-n', '--n-points', type=int, default=0,
-                        help='number of simulated data points / also controls video_idx for arrow of time')
+    parser.add_argument('-n', '--n-points', type=int, default=-1,
+                        help='number of simulated data points --- also controls video_idx/pair_idx for real data exps')
 
     return parser.parse_args()
 
@@ -40,9 +40,10 @@ def debug_options(args, config):
         config.data.causal_mech = args.causal_mech
     if args.algorithm != '':
         config.algorithm = args.algorithm
-    if args.n_points != 0:
+    if args.n_points != -1:
         config.data.n_points = args.n_points  # for interventions / simulations
         config.data.video_idx = args.n_points  # for arrow of time
+        config.data.pair_idx = args.n_points  # for pairs
 
 
 def dict2namespace(config):
@@ -100,11 +101,11 @@ def main():
     torch.manual_seed(args.seed)
 
     if args.simulation:
+        # run algorithm on simulated data
+        # and save the results as pickle files which can be used later to plot Fig 1.
         args.doc = os.path.join('simulations', config.data.causal_mech)
         make_and_set_dirs(args, config)
         if not args.plot:
-            # run algorithm on simulated data
-            # and save the results as pickle files which can be used later to plot Fig 1.
             print('Running {} on {} synthetic experiments ({} simulations - {} points)'.format(config.algorithm,
                                                                                                config.data.causal_mech,
                                                                                                args.n_sims,
@@ -114,30 +115,32 @@ def main():
             plot_simulations(args, config)
 
     if args.pairs:
+        # Run proposed method on CauseEffectPair dataset
+        # The values for baseline methods were taken from their respective papers.
         args.doc = 'pairs'
         make_and_set_dirs(args, config)
-        # Run proposed method on CauseEffectPair dataset
-        # Percentage of correct causal direction is printed to standard output,
-        # and updated online after each new pair.
-        # The values for baseline methods were taken from their respective papers.
-        print('running cause effect pairs experiments ')
-        run_cause_effect_pairs(args, config)
+
+        config.training.seed = args.seed
+        if not args.plot:
+            print('running cause effect pairs experiments ')
+            run_cause_effect_pairs(args, config)
+        else:
+            plot_pairs(args, config)
 
     if args.intervention:
+        # Run proposed method to perform interventions on the toy example described in the manuscript
         args.doc = 'interventions'
         make_and_set_dirs(args, config)
         if not args.plot:
-            # Run proposed method to perform interventions on the toy example described in the manuscript
             print('running interventions on toy example')
-            # intervention(dim=4, results_dir=args.run)
             run_interventions(args, config)
         else:
             plot_interventions(args, config)
 
     if args.counterfactual:
+        # Run proposed method to perform counterfactuals on the toy example described in the manuscript
         args.doc = 'counterfactuals'
         make_and_set_dirs(args, config)
-        # Run proposed method to perform counterfactuals on the toy example described in the manuscript
         print('running counterfactuals on toy example')
         counterfactuals(args, config)
 
