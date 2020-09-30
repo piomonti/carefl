@@ -9,7 +9,7 @@ def sigmoid(x):
 
 def gen_synth_causal_dat(nObs=100, causalFunc='square'):
     """
-    generate causal data where one variable causes another 
+    generate causal data where one variable causes another
     Inputs:
         - nObs: number of observations
         - causalFunc: specify causal function
@@ -36,29 +36,41 @@ def gen_synth_causal_dat(nObs=100, causalFunc='square'):
     return X, mod_dir
 
 
-def intervention_sem(n_obs, dim=4, seed=0, random=True, shuffle=False, multiplicative=False):
+def intervention_sem(n_obs, dim=4, seed=0, random=True, shuffle=False, nonlin='poly', multiplicative=False):
     if dim == 4:
         # generate some 4D data according to the following SEM
-        #
-        # X_1 = N_1
-        # X_2 = N_2
-        # X_3 = (X_1 + c_0*X_2^3) +/* N_3   -  c_0 random coeff
-        # X_4 = (c_1*X_1^2 - X_2) +/* N_4   -  c_1 random coeff
+        #   X_1 = N_1
+        #   X_2 = N_2
+        # if nonlinear == 'poly'
+        #   X_3 = (X_1 + c_0*X_2^3) +/* N_3   -  c_0 random coeff
+        #   X_4 = (c_1*X_1^2 - X_2) +/* N_4   -  c_1 random coeff
+        # else if nonlinear == 'sigmoid'
+        #   X_3 = sigmoid(sigmoid(c_1 * X_1 + c_2 * X_2) + N_3)  -- c_1 and c_2 random
+        #   X_4 = sigmoid(sigmoid(c_3 * X_1) + c_4 * X_2^3 + N_4)  -- c_3 and c_4 random
         np.random.seed(seed)
         # causes
         X_1 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
         X_2 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
         # effects
-        coeffs = np.random.uniform(.1, .9, 2) if random else [.5, .5]
-        X_3 = X_1 + coeffs[0] * (X_2 * X_2 * X_2)
-        X_4 = -X_2 + coeffs[1] * (X_1 * X_1)
-        if multiplicative:
-            X_3 *= np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
-            X_4 *= np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        if nonlin == 'poly':
+            coeffs = np.random.uniform(.1, .9, 2) if random else [.5, .5]
+            X_3 = X_1 + coeffs[0] * (X_2 * X_2 * X_2)
+            X_4 = -X_2 + coeffs[1] * (X_1 * X_1)
+            if multiplicative:
+                X_3 *= np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+                X_4 *= np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+            else:
+                X_3 += np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+                X_4 += np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        elif nonlin == 'sigmoid':
+            N_3 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+            N_4 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+            coeffs = np.random.normal(loc=1, size=4) if random else [.5, .5, .5, .5]
+            X_3 = sigmoid(sigmoid(coeffs[0] * X_1 + coeffs[1] * X_2) + N_3)
+            X_4 = sigmoid(sigmoid(coeffs[2] * X_1) + coeffs[1] * X_2 * X_2 * X_2 + N_4)
         else:
-            X_3 += np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
-            X_4 += np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
-        X = np.hstack((X_1, X_2, X_3, X_4))
+            raise ValueError('Unknown nonlin argument: {}'.format(nonlin))
+        X = np.vstack((X_1, X_2, X_3, X_4)).T
         # create the adjacency matrix
         dag = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0]])
         if shuffle:
