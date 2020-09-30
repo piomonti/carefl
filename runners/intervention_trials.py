@@ -13,7 +13,7 @@ from models import ANM, CAReFl
 
 
 def res_save_name(config, algo):
-    if algo.lower() != 'carefl':
+    if 'carefl' not in algo.lower():
         return 'int_{}{}{}.p'.format(config.data.n_points, 'r' * config.data.random, 'm' * config.data.multiplicative)
     return 'int_{}{}{}_{}_{}_{}_{}.p'.format(config.data.n_points,
                                              'r' * config.data.random,

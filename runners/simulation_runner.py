@@ -13,7 +13,7 @@ from models import RECI, ANM, EntropyLR, CAReFl, LinearNOTEARS
 
 
 def res_save_name(config, algo):
-    if algo.lower() != 'carefl':
+    if 'carefl' not in algo.lower():
         return 'sim_{}.p'.format(config.data.n_points)
     return 'sim_{}_{}_{}_{}_{}.p'.format(config.data.n_points,
                                          config.flow.architecture.lower(),
