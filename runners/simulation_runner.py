@@ -68,19 +68,25 @@ def plot_simulations(args, config):
     title_dic = {'nueralnet_l1': "Neural network" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + n_2 \right)$",
                  'linear': "Linear SEM\n" + r"$x_2 = x_1 + n_2 $",
                  'hoyer2009': "Nonlinear SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + n_2 $"}
-    label_dict = {'carefl': 'Affine flow LR',
+    label_dict = {'carefl': 'CAReFl',
+                  'careflns': 'CAReFl-NS',
                   'lrhyv': 'Linear LR',
                   'reci': 'RECI',
                   'anm': 'ANM',
                   'notears': 'NO-TEARS'}
     # define some parameters
     nvals = [25, 50, 75, 100, 150, 250, 500]
-    algos = ['carefl', 'lrhyv', 'notears', 'reci', 'anm']
-    to_algos = lambda s: 'carefl' if 'carefl' in s.lower() else s
+    algos = ['carefl', 'careflns', 'lrhyv', 'notears', 'reci', 'anm']
+    to_algos = lambda s: s.split('/')[0]
     sim_type = ['linear', 'hoyer2009', 'nueralnet_l1']
     res_all = {s: {a: [] for a in algos} for s in sim_type}
+
+    _flow = os.path.join('carefl', config.flow.architecture.lower())
+    _flow_ns = os.path.join('careflns', config.flow.architecture.lower())
+    sim_list = [_flow, _flow_ns, 'lrhyv', 'notears', 'reci', 'anm']
+
     for s in sim_type:
-        for a in args.sim_list:
+        for a in sim_list:
             for n in nvals:
                 config.data.n_points = n
                 res = pickle.load(

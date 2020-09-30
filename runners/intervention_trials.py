@@ -103,12 +103,17 @@ def run_interventions(args, config):
 def plot_interventions(args, config):
     # plot the MSEs
     n_obs_list = [250, 500, 750, 1000, 1250, 1500, 2000, 2500]
-    models = ['carefl', 'gp', 'linear']
-    to_models = lambda s: 'carefl' if 'carefl' in s else s
+    models = ['carefl', 'careflns', 'gp', 'linear']
+    to_models = lambda s: s.split('/')[0]
     # load results from disk
     variables = ['x3', 'x3e', 'x4', 'x4e']
     results = {mod: {x: [] for x in variables} for mod in models}
-    for a in args.int_list:
+
+    _flow = os.path.join('carefl', config.flow.architecture.lower())
+    _flow_ns = os.path.join('careflns', config.flow.architecture.lower())
+    int_list = [_flow, _flow_ns, 'gp', 'linear']
+
+    for a in int_list:
         for n in n_obs_list:
             config.data.n_points = n
             res = pickle.load(
@@ -118,7 +123,7 @@ def plot_interventions(args, config):
     # produce plot
     sns.set_style("whitegrid")
     sns.set_palette(sns.color_palette("muted", 8))
-    label = {'carefl': 'CAReFl', 'gp': 'ANM-GP', 'linear': 'ANM-linear'}
+    label = {'carefl': 'CAReFl', 'careflns': 'CAReFl-NS', 'gp': 'ANM-GP', 'linear': 'ANM-linear'}
     fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
     for mod in models:
         # plot E[X_3|do(X_1=a)]

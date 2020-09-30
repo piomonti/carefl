@@ -58,12 +58,10 @@ def dict2namespace(config):
 
 
 def make_and_set_dirs(args, config):
-    args.algo = config.algorithm.lower()
     if config.algorithm.lower() == 'carefl':
-        args.algo = os.path.join(args.algo, config.flow.architecture.lower())
-    _flow_alg = os.path.join('carefl', config.flow.architecture.lower())
-    args.sim_list = [_flow_alg, 'lrhyv', 'notears', 'reci', 'anm']
-    args.int_list = [_flow_alg, 'gp', 'linear']
+        args.algo = os.path.join('carefl' + 'ns' * (1 - config.flow.scale), config.flow.architecture.lower())
+    else:
+        args.algo = config.algorithm.lower()
     os.makedirs(args.run, exist_ok=True)
     args.output = os.path.join(args.run, args.doc, args.algo)
     os.makedirs(args.output, exist_ok=True)
@@ -119,7 +117,6 @@ def main():
         # The values for baseline methods were taken from their respective papers.
         args.doc = 'pairs'
         make_and_set_dirs(args, config)
-
         config.training.seed = args.seed
         if not args.plot:
             print('running cause effect pairs experiments ')
