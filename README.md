@@ -74,15 +74,15 @@ To run simulations in parallel:
 ```bash
 for SIZE in 25 50 75 100 150 250 500; do
     for ALGO in LRHyv notears RECI ANM; do
-        for DSET in linear hoyer2009 nueralnet_l1; do
+        for DSET in linear hoyer2009 nueralnet_l1 highdim; do
             sbatch slurm_main_cpu.sbatch -s -m $DSET -a $ALGO -n $SIZE
         done
     done
 done
-ALGO=CAReFl
+ALGO=carefl
 for SIZE in 25 50 75 100 150 250 500; do
-    for DSET in linear hoyer2009 nueralnet_l1; do
-        sbatch slurm_main.sbatch -s -m $DSET -a $ALGO -n $SIZE
+    for DSET in linear hoyer2009 nueralnet_l1 highdim; do
+        sbatch slurm_main_cpu.sbatch -s -m $DSET -a $ALGO -n $SIZE
     done
 done
 
@@ -98,7 +98,7 @@ for SIZE in 250 500 750 1000 1250 1500 2000 2500; do
 done
 ALGO=carefl
 for SIZE in 250 500 750 1000 1250 1500 2000 2500; do
-    sbatch slurm_main.sbatch -i -a $ALGO -n $SIZE
+    sbatch slurm_main_cpu.sbatch -i -a $ALGO -n $SIZE
 done
 
 ```

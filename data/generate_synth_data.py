@@ -36,7 +36,7 @@ def gen_synth_causal_dat(nObs=100, causalFunc='square'):
     return X, mod_dir
 
 
-def intervention_sem(n_obs, dim=4, seed=0, random=True, multiplicative=False):
+def intervention_sem(n_obs, dim=4, seed=0, random=True, shuffle=False, multiplicative=False):
     if dim == 4:
         # generate some 4D data according to the following SEM
         #
@@ -58,9 +58,14 @@ def intervention_sem(n_obs, dim=4, seed=0, random=True, multiplicative=False):
         else:
             X_3 += np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
             X_4 += np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        X = np.hstack((X_1, X_2, X_3, X_4))
         # create the adjacency matrix
         dag = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0]])
-        return np.hstack((X_1, X_2, X_3, X_4)), coeffs, dag
+        if shuffle:
+            if np.random.uniform() < .5:
+                X = X[:, [2, 3, 0, 1]]
+                dag = np.array([[0, 0, 1, 1], [0, 0, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]])
+        return X, coeffs, dag
     else:
         raise NotImplementedError('will be implemented soon')
 
