@@ -141,9 +141,10 @@ class ANM:
         Returns:
             float: Causation score (Value : 1 if a->b and -1 if b->a)
         """
-        a, b = data[:, 0], data[:, 1]
-        a = scale(a).reshape((-1, 1))
-        b = scale(b).reshape((-1, 1))
+        d = data.shape[1] // 2
+        a, b = data[:, :d], data[:, d:]
+        a = scale(a).reshape((-1, d))
+        b = scale(b).reshape((-1, d))
 
         p = self.anm_score(b, a) - self.anm_score(a, b)
         causal_dir = 'x->y' if p > 0 else 'y->x'

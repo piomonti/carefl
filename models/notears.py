@@ -109,7 +109,8 @@ class LinearNOTEARS:
         self.W_est = W_est
 
         # get measure of causal direction
-        R = np.abs(W_est[1, 0]) - np.abs(W_est[0, 1])
+        dx = d // 2
+        R = np.sum(np.abs(W_est[dx:, :dx])) - np.sum(np.abs(W_est[:dx, dx:]))
         causal_dir = 'x->y' if R < 0 else 'y->x'
 
         return R, causal_dir
