@@ -29,6 +29,7 @@ def run_eeg(args, config):
     results = {'p': [], 'c': [], 'correct': 0}
     per_correct = 0
     for sim in range(n_sims):
+        config.training.seed = sim
         data, mod_dir = eeg_data(idx=config.data.timeseries_idx, shuffle=True, lag=config.data.lag)
         if algo.lower() == 'lrhyv':
             mod = EntropyLR()
