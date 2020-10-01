@@ -168,7 +168,7 @@ class ArrowDataset(Dataset):
         return transformed_image
 
 
-class VideoFeatures:
+class VideoFeatures(Dataset):
     def __init__(self, config, train=True, transform=None, pca=False, n_components=1):
         """
         Args:
