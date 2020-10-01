@@ -106,7 +106,7 @@ def plot_simulations(args, config):
     # prepare plot
     sns.set_style("whitegrid")
     sns.set_palette('deep')
-    fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(2, 3, figsize=(12, 8), sharey=True)
+    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(12, 8), sharey=True)
     for a in algos:
         ax1.plot(nvals, res_all['linear'][a], marker='o')
         ax2.plot(nvals, res_all['hoyer2009'][a], marker='o')
@@ -141,5 +141,5 @@ def plot_simulations(args, config):
         title="Algorithm"  # Title for the legend
     )
     plt.tight_layout()
-    plt.subplots_adjust(right=0.85)
+    plt.subplots_adjust(right=0.86)
     plt.savefig(os.path.join(args.run, fig_save_name(config)), dpi=300)
