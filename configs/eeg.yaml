@@ -1,0 +1,39 @@
+algorithm: 'carefl'  # in {'CAReFl', 'LRHyv', 'notears', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
+
+data:
+  timeseries_idx: 0
+  seed: 0
+  lag: [1]
+
+
+# only relevant for flows
+flow:
+  architecture: 'CL'
+  net_class: 'MLP'  # in {'MLP', 'ARMLP', 'MLP4'}.lower()
+  nl: 2
+  nh: 10
+  batch_norm: false
+  prior_dist: 'laplace'
+  # for CL
+  scale_base: true
+  shift_base: true
+  scale: true
+
+
+training:
+  epochs: 100
+  verbose: false
+  split: .8
+  seed: 0
+  batch_size: 128
+
+
+optim:
+  weight_decay: 0.000
+  optimizer: "Adam"
+  lr: 0.001
+  beta1: 0.9
+  amsgrad: false
+  scheduler: true
+
+

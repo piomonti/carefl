@@ -11,6 +11,7 @@ from runners.counterfactual_trials import counterfactuals
 from runners.intervention_trials import run_interventions, plot_interventions
 from runners.simulation_runner import run_simulations, plot_simulations
 from runners.video_runner import video_runner, plot_video
+from runners.eeg_runner import run_eeg
 
 
 def parse_input():
@@ -24,6 +25,7 @@ def parse_input():
     parser.add_argument('-p', '--pairs', action='store_true', help='Run Cause Effect Pairs experiments')
     parser.add_argument('-i', '--intervention', action='store_true', help='run intervention exp on toy example')
     parser.add_argument('-c', '--counterfactual', action='store_true', help='run counterfactual exp on toy example')
+    parser.add_argument('-e', '--eeg', action='store_true', help='run eeg exp')
     parser.add_argument('-v', '--video', action='store_true', help='run video exp')
     # params to overwrite config file. useful for batch running in slurm
     parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
@@ -44,6 +46,7 @@ def debug_options(args, config):
         config.data.n_points = args.n_points  # for interventions / simulations
         config.data.video_idx = args.n_points  # for arrow of time
         config.data.pair_idx = args.n_points  # for pairs
+        config.data.timeseries_idx = args.n_points  # for arrow of time on eeg
 
 
 def dict2namespace(config):
@@ -80,6 +83,8 @@ def read_config(args):
         args.config = 'counterfactuals.yaml'
     if args.video:
         args.config = 'video.yaml'
+    if args.eeg:
+        args.config = 'eeg.yaml'
 
 
 def main():
@@ -140,6 +145,16 @@ def main():
         make_and_set_dirs(args, config)
         print('running counterfactuals on toy example')
         counterfactuals(args, config)
+
+    if args.eeg:
+        args.doc = 'eeg'
+        make_and_set_dirs(args, config)
+        config.training.seed = args.seed
+        if not args.plot:
+            print('running eeg experiment')
+            run_eeg(args, config)
+        else:
+            pass
 
     if args.video:
         args.doc = 'video'
