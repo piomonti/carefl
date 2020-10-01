@@ -1,8 +1,6 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pickle
-import seaborn as sns
 
 from data.eeg import eeg_data
 from models import RECI, ANM, EntropyLR, CAReFl, LinearNOTEARS
@@ -10,8 +8,8 @@ from models import RECI, ANM, EntropyLR, CAReFl, LinearNOTEARS
 
 def res_save_name(config, algo):
     if 'carefl' not in algo.lower():
-        return 'eeg_{}.p'.format(config.data.n_points)
-    return 'eeg_{}_{}_{}_{}_{}.p'.format(config.data.n_points,
+        return 'eeg_{}.p'.format(config.data.timeseries_idx)
+    return 'eeg_{}_{}_{}_{}_{}.p'.format(config.data.timeseries_idx,
                                          config.flow.architecture.lower(),
                                          config.flow.net_class.lower(),
                                          config.flow.nl,
@@ -53,3 +51,8 @@ def run_eeg(args, config):
             n_valid_sims -= 1
     results['correct'] = per_correct / n_valid_sims
     pickle.dump(results, open(os.path.join(args.output, res_save_name(config, algo)), 'wb'))
+
+
+def plot_eeg(args, config):
+    # TODO implement
+    pass
