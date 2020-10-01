@@ -35,13 +35,14 @@ def run_simulations(args, config):
     algo = config.algorithm
     causal_mechanism = config.data.causal_mech
     reci_form_dict = {'linear': 'poly', 'hoyer2009': 'poly', 'nueralnet_l1': 'GP', 'highdim': 'poly',
-                      'highdim_sigmoid': 'GP'}
+                      'highdim_sigmoid': 'GP', 'veryhighdim': 'GP'}
     results = {'p': [], 'c': [], 'correct': 0}
     per_correct = 0
     for sim in range(n_sims):
-        if causal_mechanism in ['highdim', 'highdim_sigmoid']:
-            nonlin = 'poly' if causal_mechanism == 'highdim' else 'sigmoid'
-            data, _, dag = intervention_sem(n_obs=n_points, seed=sim, random=config.data.random, shuffle=True,
+        if causal_mechanism in ['highdim', 'highdim_sigmoid', 'veryhighdim']:
+            dim = 20 if causal_mechanism == 'veryhighdim' else 4
+            nonlin = 'poly' if causal_mechanism == 'highdim' else 'sigmoid'  # doesn't matter for 20dim
+            data, _, dag = intervention_sem(n_obs=n_points, dim=dim, seed=sim, random=config.data.random, shuffle=True,
                                             nonlin=nonlin)
             mod_dir = 'x->y' if np.all(dag[0] == 0) else 'y->x'
         else:
@@ -75,8 +76,9 @@ def plot_simulations(args, config):
     title_dic = {'nueralnet_l1': "Neural network" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + n_2 \right)$",
                  'linear': "Linear SEM\n" + r"$x_2 = x_1 + n_2 $",
                  'hoyer2009': "Nonlinear SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + n_2 $",
-                 'highdim': "High dimensional SEM - polynomial",
-                 'highdim_sigmoid': "High dimensional SEM - sigmoid"}
+                 'highdim': "4-dimensional SEM - polynomial",
+                 'highdim_sigmoid': "4-dimensional SEM - sigmoid",
+                 'veryhighdim': "20-dimensional SEM"}
     label_dict = {'carefl': 'CAReFl',
                   'careflns': 'CAReFl-NS',
                   'lrhyv': 'Linear LR',
@@ -87,7 +89,7 @@ def plot_simulations(args, config):
     nvals = [25, 50, 75, 100, 150, 250, 500]
     algos = ['carefl', 'careflns', 'lrhyv', 'notears', 'reci', 'anm']
     to_algos = lambda s: s.split('/')[0]
-    sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'highdim', 'highdim_sigmoid']
+    sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'highdim', 'highdim_sigmoid', 'veryhighdim']
     res_all = {s: {a: [] for a in algos} for s in sim_type}
 
     _flow = os.path.join('carefl', config.flow.architecture.lower())
@@ -104,13 +106,14 @@ def plot_simulations(args, config):
     # prepare plot
     sns.set_style("whitegrid")
     sns.set_palette('deep')
-    fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, figsize=(20, 4), sharey=True)
+    fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(2, 3, figsize=(12, 8), sharey=True)
     for a in algos:
         ax1.plot(nvals, res_all['linear'][a], marker='o')
         ax2.plot(nvals, res_all['hoyer2009'][a], marker='o')
         ax3.plot(nvals, res_all['nueralnet_l1'][a], marker='o')
         ax4.plot(nvals, res_all['highdim'][a], marker='o')
-        ax5.plot(nvals, res_all['highdim_sigmoid'][a], marker='o', label=label_dict[a])
+        ax5.plot(nvals, res_all['highdim_sigmoid'][a], marker='o')
+        ax6.plot(nvals, res_all['veryhighdim'][a], marker='o', label=label_dict[a])
 
     fontsize = 12
     font_xlab = 10
@@ -119,16 +122,19 @@ def plot_simulations(args, config):
     ax3.set_title(title_dic['nueralnet_l1'], fontsize=fontsize)
     ax4.set_title(title_dic['highdim'], fontsize=fontsize)
     ax5.set_title(title_dic['highdim_sigmoid'], fontsize=fontsize)
+    ax6.set_title(title_dic['veryhighdim'], fontsize=fontsize)
     ax1.set_xlabel('Sample size', fontsize=font_xlab)
     ax2.set_xlabel('Sample size', fontsize=font_xlab)
     ax3.set_xlabel('Sample size', fontsize=font_xlab)
     ax4.set_xlabel('Sample size', fontsize=font_xlab)
     ax5.set_xlabel('Sample size', fontsize=font_xlab)
+    ax6.set_xlabel('Sample size', fontsize=font_xlab)
     ax1.set_ylabel('Proportion correct', fontsize=font_xlab)
     ax2.set_ylabel('Proportion correct', fontsize=font_xlab)
     ax3.set_ylabel('Proportion correct', fontsize=font_xlab)
     ax4.set_ylabel('Proportion correct', fontsize=font_xlab)
     ax5.set_ylabel('Proportion correct', fontsize=font_xlab)
+    ax6.set_ylabel('Proportion correct', fontsize=font_xlab)
     fig.legend(  # The labels for each line
         loc="center right",  # Position of legend
         borderaxespad=0.2,  # Small spacing around legend box
