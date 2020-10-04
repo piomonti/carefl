@@ -8,10 +8,10 @@ import yaml
 
 from runners.cause_effect_pairs_runner import run_cause_effect_pairs, plot_pairs
 from runners.counterfactual_trials import counterfactuals
+from runners.eeg_runner import run_eeg, plot_eeg
 from runners.intervention_trials import run_interventions, plot_interventions
 from runners.simulation_runner import run_simulations, plot_simulations
 from runners.video_runner import video_runner, plot_video
-from runners.eeg_runner import run_eeg, plot_eeg
 
 
 def parse_input():
@@ -45,7 +45,7 @@ def debug_options(args, config):
     if args.n_points != -1:
         config.data.n_points = args.n_points  # for interventions / simulations
         config.data.video_idx = args.n_points  # for arrow of time
-        config.data.pair_idx = args.n_points  # for pairs
+        config.data.pair_id = args.n_points  # for pairs
         config.data.timeseries_idx = args.n_points  # for arrow of time on eeg
 
 
@@ -122,7 +122,6 @@ def main():
         # The values for baseline methods were taken from their respective papers.
         args.doc = 'pairs'
         make_and_set_dirs(args, config)
-        config.training.seed = args.seed
         if not args.plot:
             print('running cause effect pairs experiments ')
             run_cause_effect_pairs(args, config)

@@ -9,13 +9,12 @@ from models.carefl import CAReFl
 PairDataDir = 'data/pairs/'
 
 
-def res_save_name(args, config):
-    return 'pair_{}_{}_{}_{}_{}_{}.p'.format(args.n_points,
-                                             config.flow.architecture.lower(),
-                                             config.flow.net_class.lower(),
-                                             config.flow.nl,
-                                             config.flow.nh,
-                                             args.seed)
+def res_save_name(config):
+    return 'pair_{}_{}_{}_{}_{}.p'.format(config.data.pair_id,
+                                          config.flow.architecture.lower(),
+                                          config.flow.net_class.lower(),
+                                          config.flow.nl,
+                                          config.flow.nh)
 
 
 def run_cause_effect_pairs(args, config):
@@ -54,13 +53,23 @@ def run_cause_effect_pairs(args, config):
         print('True causal direction: ' + dir_id)
         print('baseline dist: ' + config.flow.prior_dist)
 
-    model = CAReFl(config)
-    p, pred_model, sxy, syx = model.predict_proba(dat_id, return_scores=True)
-
-    results = {'p': p, 'c': pred_model == dir_id, 'dir': dir_id, 'sxy': sxy, 'syx': syx}
-    path = os.path.join(args.output, str(i))
-    os.makedirs(path, exist_ok=True)
-    pickle.dump(results, open(os.path.join(path, res_save_name(args, config)), 'wb'))
+    results = {'p': [], 'c': [], 'correct': 0, 'dir': dir_id, 'sxy': [], 'syx': []}
+    per_correct = 0
+    n_sims = n_valid_sims = args.n_sims
+    for sim in range(n_sims):
+        config.training.seed = sim
+        model = CAReFl(config)
+        p, pred_model, sxy, syx = model.predict_proba(dat_id, return_scores=True)
+        if not np.isnan(p):
+            per_correct += pred_model == dir_id
+            results['p'].append(p)
+            results['c'].append(1. * (pred_model == dir_id))
+            results['sxy'].append(sxy)
+            results['syx'].append(syx)
+        else:
+            n_valid_sims -= 1
+    results['correct'] = per_correct / n_valid_sims
+    pickle.dump(results, open(os.path.join(args.output, res_save_name(config)), 'wb'))
 
 
 def plot_pairs(args, config):
@@ -70,7 +79,7 @@ def plot_pairs(args, config):
     syxs = []
     for seed in range(1):
         args.seed = seed
-        res = pickle.load(open(os.path.join(args.output, str(config.data.pair_idx), res_save_name(args, config)), 'rb'))
+        res = pickle.load(open(os.path.join(args.output, str(config.data.pair_idx), res_save_name(config)), 'rb'))
         cs.append(res['c'])
         ps.append(res['p'])
         sxys.append(res['sxy'] if 'sxy' in res.keys() else 0)
