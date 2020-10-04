@@ -11,7 +11,7 @@ from runners.counterfactual_trials import counterfactuals
 from runners.intervention_trials import run_interventions, plot_interventions
 from runners.simulation_runner import run_simulations, plot_simulations
 from runners.video_runner import video_runner, plot_video
-from runners.eeg_runner import run_eeg
+from runners.eeg_runner import run_eeg, plot_eeg
 
 
 def parse_input():
@@ -154,7 +154,7 @@ def main():
             print('running eeg experiment')
             run_eeg(args, config)
         else:
-            pass
+            plot_eeg(args, config)
 
     if args.video:
         args.doc = 'video'
