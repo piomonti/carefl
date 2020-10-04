@@ -31,9 +31,9 @@ def run_eeg(args, config):
     n_sims = args.n_sims
     algo = config.algorithm
     results = {n: {'p': [], 'c': [], 'correct': 0} for n in n_obs_list}
-    per_correct = 0
     for n_obs in n_obs_list:
         n_valid_sims = args.n_sims
+        per_correct = 0
         for sim in range(n_sims):
             config.training.seed = sim
             data, mod_dir = eeg_data(idx=config.data.timeseries_idx, lag=config.data.lag, n_obs=n_obs)
