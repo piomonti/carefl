@@ -67,7 +67,7 @@ def intervention_sem(n_obs, dim=4, seed=0, random=True, shuffle=False, nonlin='p
             N_4 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
             coeffs = np.random.normal(loc=1, size=4) if random else [.5, .5, .5, .5]
             X_3 = sigmoid(sigmoid(coeffs[0] * X_1 + coeffs[1] * X_2) + N_3)
-            X_4 = sigmoid(sigmoid(coeffs[2] * X_1) + coeffs[1] * X_2 * X_2 * X_2 + N_4)
+            X_4 = sigmoid(sigmoid(coeffs[2] * X_1) + coeffs[3] * X_2 * X_2 * X_2 + N_4)
         else:
             raise ValueError('Unknown nonlin argument: {}'.format(nonlin))
         X = np.vstack((X_1, X_2, X_3, X_4)).T
@@ -81,15 +81,16 @@ def intervention_sem(n_obs, dim=4, seed=0, random=True, shuffle=False, nonlin='p
     elif dim == 20:
         # generate a 20D SEM:
         #   X_1 ... X_10 = N_1 ... N_10
+        #   c_i random
         #   j>10, X_j = f(X_<=10, N_j), where
         #   f randomly drawn from one of the following:
-        #       sigmoid(sigmoid(sum_i c_i * X_i) + N_j)  -- c_i random
-        #       sigmoid(sigmoid(sum_i<6 c_i * X_i) + sum_i>5 c_i * X_i^(i-5) + N_j)  -- c_i random
-        #       sigmoid(sum_i<6 c_i * X_i^i) + N_j  - c_i random
+        #       sigmoid(sigmoid(sum_i c_i * X_i) + N_j)
+        #       sigmoid(sigmoid(sum_i<6 c_i * X_i) + sum_i>5 c_i * X_i^{i-5} + N_j)
+        #       sigmoid(sigmoid(sum_i<6 c_i * X_i) + sigmoid(sum_i>5 c_i * X_i^{i-4} + N_j))
         # effects
         X = np.random.laplace(0, 1 / np.sqrt(2), size=(n_obs, 10))
         # causes:
-        coeffs = np.random.normal(loc=1, size=(1, 10)) if random else .5 * np.ones(10)
+        coeffs = np.random.normal(loc=1, size=(1, 10)) if random else .5 * np.ones((1, 10))
         dag = np.zeros((20, 20))
         Y = np.zeros((n_obs, 10))
         N = np.random.laplace(0, 1 / np.sqrt(2), size=(n_obs, 10))
@@ -104,8 +105,11 @@ def intervention_sem(n_obs, dim=4, seed=0, random=True, shuffle=False, nonlin='p
                                   N[:, i])
                 dag[10 + i, :10] = 1
             else:
-                Y[:, i] = sigmoid(np.sum(coeffs[:, :5] * X[:, :5] ** np.arange(5), axis=1)) + N[:, i]
-                dag[10 + i, :5] = 1
+                Y[:, i] = sigmoid(sigmoid(np.sum(coeffs[:, :5] * X[:, :5] ** np.arange(5), axis=1)) +
+                                  sigmoid(np.sum(coeffs[:, 5:] * X[:, 5:] ** np.arange(1, 6), axis=1) +
+                                          N[:, i])
+                                  )
+                dag[10 + i, :10] = 1
         data = np.hstack((X, Y))
         if shuffle:
             if np.random.uniform() < .5:
