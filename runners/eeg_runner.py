@@ -9,14 +9,16 @@ from data.eeg import eeg_data
 from models import RECI, ANM, EntropyLR, CAReFl, LinearNOTEARS
 
 
-def res_save_name(config, algo):
+def res_save_name(config, algo, obs):
     if 'carefl' not in algo.lower():
-        return 'eeg_{}.p'.format(config.data.timeseries_idx)
-    return 'eeg_{}_{}_{}_{}_{}.p'.format(config.data.timeseries_idx,
-                                         config.flow.architecture.lower(),
-                                         config.flow.net_class.lower(),
-                                         config.flow.nl,
-                                         config.flow.nh)
+        return 'eeg_{}_{}_{}.p'.format(config.data.timeseries_idx, config.data.lag, obs)
+    return 'eeg_{}_{}_{}_{}_{}_{}_{}.p'.format(config.data.timeseries_idx,
+                                               config.flow.architecture.lower(),
+                                               config.flow.net_class.lower(),
+                                               config.flow.nl,
+                                               config.flow.nh,
+                                               config.data.lag,
+                                               obs)
 
 
 def fig_save_name(config):
@@ -27,7 +29,7 @@ def fig_save_name(config):
 
 
 def run_eeg(args, config):
-    n_obs_list = [25, 50, 75, 100, 150, 250, 500]
+    n_obs_list = [150, 500]
     n_sims = args.n_sims
     algo = config.algorithm
     results = {n: {'p': [], 'c': [], 'correct': 0} for n in n_obs_list}
@@ -57,7 +59,7 @@ def run_eeg(args, config):
             else:
                 n_valid_sims -= 1
         results[n_obs]['correct'] = per_correct / n_valid_sims
-    pickle.dump(results, open(os.path.join(args.output, res_save_name(config, algo)), 'wb'))
+    pickle.dump(results, open(os.path.join(args.output, res_save_name(config, algo, n_obs_list)), 'wb'))
 
 
 def plot_eeg(args, config):

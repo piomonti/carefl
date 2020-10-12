@@ -39,23 +39,45 @@ def create_timeseries(root='data/egg/'):
     np.savetxt(os.path.join(root, 'eeg_1000Hz_5s_10pieces_dirs.txt'), directions == 'x->y', fmt='%d')
 
 
+# def eeg_data(root='data/eeg', idx=None, lag=None, n_obs=500):
+#     if lag is None:
+#         lag = [1]
+#     try:
+#         raw_data = np.loadtxt(os.path.join(root, 'eeg_1000Hz_5s_10pieces_ts.txt'), usecols=idx)
+#     except OSError:
+#         print("Raw data not processed - processing...")
+#         create_timeseries(root)
+#         raw_data = np.loadtxt(os.path.join(root, 'eeg_1000Hz_5s_10pieces_ts.txt'), usecols=idx)
+#     if raw_data.ndim < 2:
+#         raw_data = raw_data.reshape((-1, 1))
+#     raw_data = raw_data[:n_obs]
+#     data = []
+#     for l in lag:
+#         data.append(np.concatenate([raw_data[:-l], raw_data[l:]], axis=1))
+#     data = np.concatenate(data, axis=0)
+#     # load direction
+#     direction = np.loadtxt(os.path.join(root, 'eeg_1000Hz_5s_10pieces_dirs.txt'), usecols=idx)
+#     direction = 'x->y' if direction == 1 else 'y->x'
+#     return data, direction
+
+
 def eeg_data(root='data/eeg', idx=None, lag=None, n_obs=500):
     if lag is None:
         lag = [1]
     try:
-        raw_data = np.loadtxt(os.path.join(root, 'eeg_1000Hz_5s_10pieces_ts.txt'), usecols=idx)
+        raw_data = np.loadtxt(os.path.join(root, 'eeg_1000Hz_5s_ts.txt'), usecols=idx)
     except OSError:
         print("Raw data not processed - processing...")
         create_timeseries(root)
-        raw_data = np.loadtxt(os.path.join(root, 'eeg_1000Hz_5s_10pieces_ts.txt'), usecols=idx)
+        raw_data = np.loadtxt(os.path.join(root, 'eeg_1000Hz_5s_ts.txt'), usecols=idx)
     if raw_data.ndim < 2:
         raw_data = raw_data.reshape((-1, 1))
-    raw_data = raw_data[:n_obs]
+    # load direction
+    direction = np.loadtxt(os.path.join(root, 'eeg_1000Hz_5s_dirs.txt'), usecols=idx)
+    raw_data = raw_data[:n_obs] if direction == 1 else raw_data[-n_obs:]
+    direction = 'x->y' if direction == 1 else 'y->x'
     data = []
     for l in lag:
         data.append(np.concatenate([raw_data[:-l], raw_data[l:]], axis=1))
     data = np.concatenate(data, axis=0)
-    # load direction
-    direction = np.loadtxt(os.path.join(root, 'eeg_1000Hz_5s_10pieces_dirs.txt'), usecols=idx)
-    direction = 'x->y' if direction == 1 else 'y->x'
     return data, direction
