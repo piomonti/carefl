@@ -73,12 +73,12 @@ def run_simulations(args, config):
 
 def plot_simulations(args, config):
     # produce a plot of synthetic results
-    title_dic = {'nueralnet_l1': "Neural network" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + n_2 \right)$",
-                 'linear': "Linear SEM\n" + r"$x_2 = x_1 + n_2 $",
-                 'hoyer2009': "Nonlinear SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + n_2 $",
+    title_dic = {'nueralnet_l1': "Neural network" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + z_2 \right)$",
+                 'linear': "Linear SEM\n" + r"$x_2 = x_1 + z_2 $",
+                 'hoyer2009': "Nonlinear SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + z_2 $",
                  'highdim': "4-dimensional SEM - polynomial",
                  'highdim_sigmoid': "4-dimensional SEM - sigmoid",
-                 'veryhighdim': "20-dimensional SEM"}
+                 'veryhighdim': "20-dimensional SEM\n" + r"$\mathbf{x}_{11:20} = NN(\mathbf{x}_{1:10}, \mathbf{z}_{11:20})$"}
     label_dict = {'carefl': 'CAReFl',
                   'careflns': 'CAReFl-NS',
                   'lrhyv': 'Linear LR',
@@ -106,40 +106,40 @@ def plot_simulations(args, config):
     # prepare plot
     sns.set_style("whitegrid")
     sns.set_palette('deep')
-    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(12, 8), sharey=True)
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(16, 4), sharey=True)
     for a in algos:
         ax1.plot(nvals, res_all['linear'][a], marker='o')
         ax2.plot(nvals, res_all['hoyer2009'][a], marker='o')
         ax3.plot(nvals, res_all['nueralnet_l1'][a], marker='o')
-        ax4.plot(nvals, res_all['highdim'][a], marker='o')
-        ax5.plot(nvals, res_all['highdim_sigmoid'][a], marker='o')
-        ax6.plot(nvals, res_all['veryhighdim'][a], marker='o', label=label_dict[a])
+        # ax4.plot(nvals, res_all['highdim'][a], marker='o')
+        # ax5.plot(nvals, res_all['highdim_sigmoid'][a], marker='o')
+        ax4.plot(nvals, res_all['veryhighdim'][a], marker='o', label=label_dict[a])
 
     fontsize = 12
     font_xlab = 10
     ax1.set_title(title_dic['linear'], fontsize=fontsize)
     ax2.set_title(title_dic['hoyer2009'], fontsize=fontsize)
     ax3.set_title(title_dic['nueralnet_l1'], fontsize=fontsize)
-    ax4.set_title(title_dic['highdim'], fontsize=fontsize)
-    ax5.set_title(title_dic['highdim_sigmoid'], fontsize=fontsize)
-    ax6.set_title(title_dic['veryhighdim'], fontsize=fontsize)
+    # ax4.set_title(title_dic['highdim'], fontsize=fontsize)
+    # ax5.set_title(title_dic['highdim_sigmoid'], fontsize=fontsize)
+    ax4.set_title(title_dic['veryhighdim'], fontsize=fontsize)
     ax1.set_xlabel('Sample size', fontsize=font_xlab)
     ax2.set_xlabel('Sample size', fontsize=font_xlab)
     ax3.set_xlabel('Sample size', fontsize=font_xlab)
+    # ax4.set_xlabel('Sample size', fontsize=font_xlab)
+    # ax5.set_xlabel('Sample size', fontsize=font_xlab)
     ax4.set_xlabel('Sample size', fontsize=font_xlab)
-    ax5.set_xlabel('Sample size', fontsize=font_xlab)
-    ax6.set_xlabel('Sample size', fontsize=font_xlab)
     ax1.set_ylabel('Proportion correct', fontsize=font_xlab)
     ax2.set_ylabel('Proportion correct', fontsize=font_xlab)
     ax3.set_ylabel('Proportion correct', fontsize=font_xlab)
+    # ax4.set_ylabel('Proportion correct', fontsize=font_xlab)
+    # ax5.set_ylabel('Proportion correct', fontsize=font_xlab)
     ax4.set_ylabel('Proportion correct', fontsize=font_xlab)
-    ax5.set_ylabel('Proportion correct', fontsize=font_xlab)
-    ax6.set_ylabel('Proportion correct', fontsize=font_xlab)
     fig.legend(  # The labels for each line
         loc="center right",  # Position of legend
         borderaxespad=0.2,  # Small spacing around legend box
         title="Algorithm"  # Title for the legend
     )
     plt.tight_layout()
-    plt.subplots_adjust(right=0.86)
+    plt.subplots_adjust(right=0.9)
     plt.savefig(os.path.join(args.run, fig_save_name(config)), dpi=300)
