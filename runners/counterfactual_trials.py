@@ -39,7 +39,7 @@ def counterfactuals(args, config):
     sns.set_style("whitegrid")
     sns.set_palette(sns.color_palette("muted", 8))
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-    fig.suptitle(r'Counterfactual predictions', fontsize=22)
+    # fig.suptitle(r'Counterfactual predictions', fontsize=22)
     # see quality of counterfactual predictions for X_4
     xCF_true = [gen_observation(np.hstack((x, N[0, 1:])).reshape((1, 4)))[0, 3] for x in xvals]
     xCF_pred = [mod.predict_counterfactual(x_obs=xObs, cf_val=x, iidx=0)[0, 3] for x in xvals]

@@ -72,6 +72,7 @@ def run_interventions(args, config):
 
 
 def plot_interventions(args, config):
+    from configs.plotting import color_dict, label_dict, font_dict
     # plot the MSEs
     n_obs_list = [250, 500, 750, 1000, 1250, 1500, 2000, 2500]
     models = ['carefl', 'careflns', 'gp', 'linear']
@@ -93,27 +94,28 @@ def plot_interventions(args, config):
                 results[to_models(a)][x].append(res[x])
     # produce plot
     sns.set_style("whitegrid")
-    sns.set_palette(sns.color_palette("muted", 8))
-    label = {'carefl': 'CAReFl', 'careflns': 'CAReFl-NS', 'gp': 'ANM-GP', 'linear': 'ANM-linear'}
+    # sns.set_palette(sns.color_palette("muted", 8))
     fig, axs = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
-    for mod in models:
+    for a in models:
         # plot E[X_3|do(X_1=a)]
         if config.data.expected:
-            axs[0].plot(n_obs_list, results[mod]["x3e"], linestyle='-.', marker='o', linewidth=2, alpha=.8)
+            axs[0].plot(n_obs_list, results[a]["x3e"], color=color_dict[a], linestyle='-.',
+                        marker='o', linewidth=2, alpha=.8)
         else:
-            axs[0].plot(n_obs_list, results[mod]["x3"], linestyle='-', marker='o', linewidth=2, alpha=.8)
+            axs[0].plot(n_obs_list, results[a]["x3"], color=color_dict[a], linestyle='-',
+                        marker='o', linewidth=2, alpha=.8)
         # plot E[X_4|do(X_1=a)]
         if config.data.expected:
-            axs[1].plot(n_obs_list, results[mod]["x4e"], label='{}'.format(label[mod]), linestyle='-.',
+            axs[1].plot(n_obs_list, results[a]["x4e"], color=color_dict[a], label=label_dict[a], linestyle='-.',
                         marker='o', linewidth=2, alpha=.8)
         else:
-            axs[1].plot(n_obs_list, results[mod]["x4"], label='{}'.format(label[mod]), linestyle='-',
+            axs[1].plot(n_obs_list, results[a]["x4"], color=color_dict[a], label=label_dict[a], linestyle='-',
                         marker='o', linewidth=2, alpha=.8)
-    axs[0].set_title(r'$\mathbb{E}[X_3|do(X_1=a)]$', fontsize=13)
-    axs[1].set_title(r'$\mathbb{E}[X_4|do(X_1=a)]$', fontsize=13)
+    axs[0].set_title(r'$\mathbb{E}[X_3|do(X_1=a)]$', fontsize=font_dict['title'])
+    axs[1].set_title(r'$\mathbb{E}[X_4|do(X_1=a)]$', fontsize=font_dict['title'])
     for ax in axs:
-        ax.set_xlabel(r'Sample size', fontsize=10)
-        ax.set_ylabel(r'MSE', fontsize=10)
+        ax.set_xlabel(r'Sample size', fontsize=font_dict['xlabel'])
+        ax.set_ylabel(r'MSE', fontsize=font_dict['ylabel'])
         ax.set_yscale('log')
     fig.legend(  # The labels for each line
         loc="center right",  # Position of legend

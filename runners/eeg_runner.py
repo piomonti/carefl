@@ -1,8 +1,7 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pickle
-
-import matplotlib.pyplot as plt
 import seaborn as sns
 
 from data.eeg import eeg_data
@@ -21,11 +20,13 @@ def res_save_name(config, algo, obs):
                                                obs)
 
 
-def fig_save_name(config):
-    return 'eeg_arrow_{}_{}_{}_{}.pdf'.format(config.flow.architecture.lower(),
-                                              config.flow.net_class.lower(),
-                                              config.flow.nl,
-                                              config.flow.nh)
+def fig_save_name(config, obs):
+    return 'eeg_arrow_{}_{}_{}_{}_{}_{}.pdf'.format(config.flow.architecture.lower(),
+                                                    config.flow.net_class.lower(),
+                                                    config.flow.nl,
+                                                    config.flow.nh,
+                                                    config.data.lag,
+                                                    obs)
 
 
 def run_eeg(args, config):
@@ -63,51 +64,51 @@ def run_eeg(args, config):
 
 
 def plot_eeg(args, config):
-    # produce a plot of synthetic results
-    label_dict = {'carefl': 'CAReFl',
-                  'careflns': 'CAReFl-NS',
-                  'lrhyv': 'Linear LR',
-                  'reci': 'RECI',
-                  'anm': 'ANM',
-                  'notears': 'NO-TEARS'}
-    # define some parameters
-    nvals = [25, 50, 75, 100, 150, 250, 500]
-    algos = ['carefl', 'careflns', 'lrhyv', 'notears', 'reci', 'anm']
-    to_algos = lambda s: s.split('/')[0]
-    res_all = {a: [] for a in algos}
+    from configs.plotting import color_dict, label_dict, font_dict
 
     _flow = os.path.join('carefl', config.flow.architecture.lower())
     _flow_ns = os.path.join('careflns', config.flow.architecture.lower())
-    sim_list = [_flow, _flow_ns, 'lrhyv', 'notears', 'reci', 'anm']
+    sim_list = [_flow, _flow_ns, 'lrhyv', 'reci', 'anm']
+    to_algos = lambda s: s.split('/')[0]
 
-    for a in sim_list:
-        for n in nvals:
-            mean = []
-            for s in range(118):
-                config.data.timeseries_idx = s
-                res = pickle.load(open(os.path.join(args.run, 'eeg', a, res_save_name(config, to_algos(a))), 'rb'))
-                mean.append(res[n]['correct'])
-            res_all[to_algos(a)].append(np.mean(np.array(mean) >= .5))
+    def _plot_algo(ax, a, n_obs=500, legend=True):
+        correct = []
+        conf = {}
+        for idx in range(118):
+            config.data.timeseries_idx = idx
+            res = pickle.load(open(os.path.join('results', 'eeg', a, res_save_name(config, to_algos(a), n_obs)), 'rb'))
+            if res[n_obs]['correct'] >= .5:
+                correct.append(idx)
+            conf[idx] = np.abs(np.mean(res[500]['p']))
+        sorted_conf = {k: v for k, v in sorted(conf.items(), key=lambda item: item[1], reverse=True)}
+        sorted_keys = sorted_conf.keys()
+        sorted_cum_conf = np.cumsum([1 if x in correct else 0 for x in sorted_keys]) / np.arange(1, 119)
+        if legend:
+            ax.plot(np.linspace(0, 100, 118), sorted_cum_conf, color=color_dict[to_algos(a)],
+                    label=label_dict[to_algos(a)])
+        else:
+            ax.plot(np.linspace(0, 100, 118), sorted_cum_conf, color=color_dict[to_algos(a)])
 
     # prepare plot
     sns.set_style("whitegrid")
-    sns.set_palette('deep')
-    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-    for a in algos:
-        ax.plot(nvals, res_all[a], marker='o', label=label_dict[a])
+    # sns.set_palette('deep')
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+    for a in sim_list:
+        _plot_algo(ax1, a, 150, legend=False)
+        _plot_algo(ax2, a, 500)
 
-    fontsize = 12
-    font_xlab = 10
-    ax.set_title('Percentage correct on EEG timeseries', fontsize=fontsize)
-    ax.set_xlabel('Sample size', fontsize=font_xlab)
-    ax.set_ylabel('Proportion correct', fontsize=font_xlab)
+    ax1.set_title(r'$n=150$', fontsize=font_dict['title'])
+    ax2.set_title(r'$n=500$', fontsize=font_dict['title'])
+    ax1.set_xlabel('Decision rate', fontsize=font_dict['xlabel'])
+    ax1.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    ax2.set_xlabel('Decision rate', fontsize=font_dict['xlabel'])
+    ax2.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
 
     fig.legend(  # The labels for each line
-        # loc="center right",  # Position of legend
+        loc="center right",  # Position of legend
         borderaxespad=0.2,  # Small spacing around legend box
         title="Algorithm"  # Title for the legend
     )
     plt.tight_layout()
-    # plt.subplots_adjust(right=0.86)
-    plt.savefig(os.path.join(args.run, fig_save_name(config)), dpi=300)
-    pass
+    plt.subplots_adjust(right=0.86)
+    plt.savefig(os.path.join(args.run, fig_save_name(config, [150, 500])), dpi=300)
