@@ -74,7 +74,7 @@ def run_simulations(args, config):
 def plot_simulations(args, config):
     from configs.plotting import color_dict, label_dict, font_dict
     # produce a plot of synthetic results
-    title_dic = {'nueralnet_l1': "Neural network" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + z_2 \right)$",
+    title_dic = {'nueralnet_l1': "Neural network SEM" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + z_2 \right)$",
                  'linear': "Linear SEM\n" + r"$x_2 = x_1 + z_2 $",
                  'hoyer2009': "Nonlinear SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + z_2 $",
                  'mnm': "Affine noise SEM\n" + r"$x_2 = \sigma(x_1) + \frac{1}{2} x_1^2 + \sigma(x_1)z_2$",
@@ -86,7 +86,7 @@ def plot_simulations(args, config):
     nvals = [25, 50, 75, 100, 150, 250, 500]
     algos = ['carefl', 'careflns', 'lrhyv', 'reci', 'anm']
     to_algos = lambda s: s.split('/')[0]
-    sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'highdim', 'highdim_sigmoid', 'veryhighdim']
+    sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'highdim', 'highdim_sigmoid', 'veryhighdim', 'mnm']
     res_all = {s: {a: [] for a in algos} for s in sim_type}
 
     _flow = os.path.join('carefl', config.flow.architecture.lower())
@@ -103,32 +103,32 @@ def plot_simulations(args, config):
     # prepare plot
     sns.set_style("whitegrid")
     # sns.set_palette('deep')
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(16, 4), sharey=True)
+    fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, figsize=(20, 4), sharey=True)
     for a in algos:
         ax1.plot(nvals, res_all['linear'][a], color=color_dict[a], marker='o')
         ax2.plot(nvals, res_all['hoyer2009'][a], color=color_dict[a], marker='o')
         ax3.plot(nvals, res_all['nueralnet_l1'][a], color=color_dict[a], marker='o')
         # ax4.plot(nvals, res_all['highdim'][a], color=color_dict[a], marker='o')
-        # ax5.plot(nvals, res_all['highdim_sigmoid'][a], color=color_dict[a], marker='o')
+        ax5.plot(nvals, res_all['mnm'][a], color=color_dict[a], marker='o')
         ax4.plot(nvals, res_all['veryhighdim'][a], color=color_dict[a], marker='o', label=label_dict[a])
 
     ax1.set_title(title_dic['linear'], fontsize=font_dict['title'])
     ax2.set_title(title_dic['hoyer2009'], fontsize=font_dict['title'])
     ax3.set_title(title_dic['nueralnet_l1'], fontsize=font_dict['title'])
     # ax4.set_title(title_dic['highdim'], fontsize=font_dict['title'])
-    # ax5.set_title(title_dic['highdim_sigmoid'], fontsize=font_dict['title'])
+    ax5.set_title(title_dic['mnm'], fontsize=font_dict['title'])
     ax4.set_title(title_dic['veryhighdim'], fontsize=font_dict['title'])
     ax1.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
     ax2.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
     ax3.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
     # ax4.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
-    # ax5.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax5.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
     ax4.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
     ax1.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
     ax2.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
     ax3.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
     # ax4.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
-    # ax5.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    ax5.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
     ax4.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
     fig.legend(  # The labels for each line
         loc="center right",  # Position of legend
