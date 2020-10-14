@@ -34,7 +34,7 @@ def run_simulations(args, config):
     n_sims = n_valid_sims = args.n_sims
     algo = config.algorithm
     causal_mechanism = config.data.causal_mech
-    reci_form_dict = {'linear': 'poly', 'hoyer2009': 'poly', 'nueralnet_l1': 'GP', 'highdim': 'poly',
+    reci_form_dict = {'linear': 'poly', 'hoyer2009': 'poly', 'nueralnet_l1': 'GP', 'highdim': 'poly', 'mnm': 'GP',
                       'highdim_sigmoid': 'GP', 'veryhighdim': 'GP'}
     results = {'p': [], 'c': [], 'correct': 0}
     per_correct = 0
@@ -77,6 +77,7 @@ def plot_simulations(args, config):
     title_dic = {'nueralnet_l1': "Neural network" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + z_2 \right)$",
                  'linear': "Linear SEM\n" + r"$x_2 = x_1 + z_2 $",
                  'hoyer2009': "Nonlinear SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + z_2 $",
+                 'mnm': "Affine noise SEM\n" + r"$x_2 = \sigma(x_1) + \frac{1}{2} x_1^2 + \sigma(x_1)z_2$",
                  'highdim': "4-dimensional SEM - polynomial",
                  'highdim_sigmoid': "4-dimensional SEM - sigmoid",
                  'veryhighdim': "20-dimensional SEM\n" + r"$\mathbf{x}_{11:20} = \mathbf{g}(\mathbf{x}_{1:10}, \mathbf{z}_{11:20})$"}

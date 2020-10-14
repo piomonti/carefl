@@ -7,7 +7,7 @@ def sigmoid(x):
     return 1. / (1 + np.exp(-x))
 
 
-def gen_synth_causal_dat(nObs=100, causalFunc='square'):
+def gen_synth_causal_dat(nObs=100, causalFunc='nueralnet_l1'):
     """
     generate causal data where one variable causes another
     Inputs:
@@ -17,7 +17,9 @@ def gen_synth_causal_dat(nObs=100, causalFunc='square'):
 
     causalFuncDict = {'linear': lambda x, n: 1 * x + n,
                       'hoyer2009': lambda x, n: x + (.5) * x * x * x + (n),
-                      'nueralnet_l1': lambda x, n: sigmoid(sigmoid(np.random.normal(loc=1) * x) + n)
+                      'nueralnet_l1': lambda x, n: sigmoid(sigmoid(np.random.normal(loc=1) * x) + n),
+                      'mnm': lambda x, n: sigmoid(np.random.normal(loc=1) * x) + .5 * x ** 2
+                                          + sigmoid(np.random.normal(loc=1) * x) * n
                       }
 
     # scale divided by np.sqrt(2) to ensure std of 1
