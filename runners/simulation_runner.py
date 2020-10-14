@@ -90,7 +90,7 @@ def plot_simulations(args, config):
 
     _flow = os.path.join('carefl', config.flow.architecture.lower())
     _flow_ns = os.path.join('careflns', config.flow.architecture.lower())
-    sim_list = [_flow, _flow_ns, 'lrhyv', 'notears', 'reci', 'anm']
+    sim_list = [_flow, _flow_ns, 'lrhyv', 'reci', 'anm']
 
     for s in sim_type:
         for a in sim_list:
@@ -104,12 +104,12 @@ def plot_simulations(args, config):
     # sns.set_palette('deep')
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(16, 4), sharey=True)
     for a in algos:
-        ax1.plot(nvals, res_all['linear'][a], color=color_dict['a'], marker='o')
-        ax2.plot(nvals, res_all['hoyer2009'][a], color=color_dict['a'], marker='o')
-        ax3.plot(nvals, res_all['nueralnet_l1'][a], color=color_dict['a'], marker='o')
-        # ax4.plot(nvals, res_all['highdim'][a], color=color_dict['a'], marker='o')
-        # ax5.plot(nvals, res_all['highdim_sigmoid'][a], color=color_dict['a'], marker='o')
-        ax4.plot(nvals, res_all['veryhighdim'][a], color=color_dict['a'], marker='o', label=label_dict[a])
+        ax1.plot(nvals, res_all['linear'][a], color=color_dict[a], marker='o')
+        ax2.plot(nvals, res_all['hoyer2009'][a], color=color_dict[a], marker='o')
+        ax3.plot(nvals, res_all['nueralnet_l1'][a], color=color_dict[a], marker='o')
+        # ax4.plot(nvals, res_all['highdim'][a], color=color_dict[a], marker='o')
+        # ax5.plot(nvals, res_all['highdim_sigmoid'][a], color=color_dict[a], marker='o')
+        ax4.plot(nvals, res_all['veryhighdim'][a], color=color_dict[a], marker='o', label=label_dict[a])
 
     ax1.set_title(title_dic['linear'], fontsize=font_dict['title'])
     ax2.set_title(title_dic['hoyer2009'], fontsize=font_dict['title'])

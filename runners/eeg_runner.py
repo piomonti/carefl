@@ -71,12 +71,15 @@ def plot_eeg(args, config):
     sim_list = [_flow, _flow_ns, 'lrhyv', 'reci', 'anm']
     to_algos = lambda s: s.split('/')[0]
 
+    obs_list = [150, 500]
+
     def _plot_algo(ax, a, n_obs=500, legend=True):
         correct = []
         conf = {}
         for idx in range(118):
             config.data.timeseries_idx = idx
-            res = pickle.load(open(os.path.join('results', 'eeg', a, res_save_name(config, to_algos(a), n_obs)), 'rb'))
+            res = pickle.load(
+                open(os.path.join('results', 'eeg', a, res_save_name(config, to_algos(a), obs_list)), 'rb'))
             if res[n_obs]['correct'] >= .5:
                 correct.append(idx)
             conf[idx] = np.abs(np.mean(res[500]['p']))
@@ -84,15 +87,15 @@ def plot_eeg(args, config):
         sorted_keys = sorted_conf.keys()
         sorted_cum_conf = np.cumsum([1 if x in correct else 0 for x in sorted_keys]) / np.arange(1, 119)
         if legend:
-            ax.plot(np.linspace(0, 100, 118), sorted_cum_conf, color=color_dict[to_algos(a)],
+            ax.plot(np.linspace(0, 100, 118), sorted_cum_conf, linewidth=2, color=color_dict[to_algos(a)],
                     label=label_dict[to_algos(a)])
         else:
-            ax.plot(np.linspace(0, 100, 118), sorted_cum_conf, color=color_dict[to_algos(a)])
+            ax.plot(np.linspace(0, 100, 118), sorted_cum_conf, linewidth=2, color=color_dict[to_algos(a)])
 
     # prepare plot
     sns.set_style("whitegrid")
     # sns.set_palette('deep')
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4))
     for a in sim_list:
         _plot_algo(ax1, a, 150, legend=False)
         _plot_algo(ax2, a, 500)
@@ -107,8 +110,9 @@ def plot_eeg(args, config):
     fig.legend(  # The labels for each line
         loc="center right",  # Position of legend
         borderaxespad=0.2,  # Small spacing around legend box
-        title="Algorithm"  # Title for the legend
+        title="Algorithm",  # Title for the legend
+        fontsize=11
     )
     plt.tight_layout()
-    plt.subplots_adjust(right=0.86)
+    plt.subplots_adjust(right=0.84)
     plt.savefig(os.path.join(args.run, fig_save_name(config, [150, 500])), dpi=300)
