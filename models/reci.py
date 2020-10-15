@@ -33,15 +33,16 @@ class RECI:
             float: Causation score (Value : 1 if a->b and -1 if b->a)
         """
 
-        x = data[:, 0]
-        y = data[:, 1]
+        d = data.shape[1] // 2
+        x = data[:, :d]
+        y = data[:, d:]
         if self.scale_input:
-            x = scale(x).reshape((-1, 1))
-            y = scale(y).reshape((-1, 1))
+            x = scale(x).reshape((-1, d))
+            y = scale(y).reshape((-1, d))
         else:
             # use min max scaler instead - as suggested by Blobaum et al (2018)
-            x = MinMaxScaler().fit_transform(x.reshape((-1, 1)))
-            y = MinMaxScaler().fit_transform(y.reshape((-1, 1)))
+            x = MinMaxScaler().fit_transform(x.reshape((-1, d)))
+            y = MinMaxScaler().fit_transform(y.reshape((-1, d)))
 
         p = self.compute_residual(x, y, form=self.form, k=self.k) - self.compute_residual(y, x, form=self.form,
                                                                                           k=self.k)
@@ -64,19 +65,16 @@ class RECI:
 
         assert form in ['linear', 'GP', 'poly']
 
-        x = x.reshape((-1, 1))
-        y = y.reshape((-1, 1))
-
         if form == 'linear':
             # use linear regression
             res = LinearRegression().fit(x, y)
             residuals = y - res.predict(x)
-            return np.median(residuals ** 2)
+            return np.sum(np.median(residuals ** 2, axis=0))
         elif form == 'poly':
             features = np.hstack([x ** i for i in range(1, k)])
             res = LinearRegression().fit(features, y)
             residuals = y - res.predict(features)
-            return np.median(residuals ** 2)
+            return np.sum(np.median(residuals ** 2, axis=0))
         else:
             # use Gaussian process regssion
             # kernel = 1.0 * RBF() #+ WhiteKernel()
@@ -84,4 +82,4 @@ class RECI:
             y = scale(y)
             gp = GaussianProcessRegressor().fit(x, y)
             residuals = y - gp.predict(x)
-            return np.mean(residuals ** 2)
+            return np.sum(np.mean(residuals ** 2, axis=0))

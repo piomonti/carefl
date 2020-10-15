@@ -22,10 +22,10 @@ def DiffEntropyHyv1998(x):
     K2 = 7.4129
     gamma = .37457
 
-    diffE = -1 * K1 * (np.log(np.cosh(x)).mean() - gamma) ** 2
-    diffE -= K2 * (x * np.exp(-0.5 * x * x)).mean() ** 2
+    diffE = -1 * K1 * (np.log(np.cosh(x)).mean(0) - gamma) ** 2
+    diffE -= K2 * (x * np.exp(-0.5 * x * x)).mean(0) ** 2
 
-    return 1 * diffE
+    return np.sum(1 * diffE)
 
 
 def DiffEntropyKraskov2004(x):
@@ -85,13 +85,16 @@ class EntropyLR:
         self.normalize = normalize
 
     def predict_proba(self, data):
+        d = data.shape[1] // 2
+        if d > 1:
+            # only Hyv98 entropy supports high D variables for now
+            assert self.entropy == 'Hyv98'
+        x, y = data[:, :d], data[:, d:]
         # first scale
-        x, y = data[:, 0], data[:, 1]
         x = scale(x)
         y = scale(y)
-
         # estimate correlation coef
-        rho = np.corrcoef(x, y)[0, 1]
+        rho = np.corrcoef(x, y, rowvar=False)[:d, d:]
 
         functionDict = {'Hyv98': DiffEntropyHyv1998,
                         'Kraskov04': DiffEntropyKraskov2004,
@@ -100,15 +103,15 @@ class EntropyLR:
         entFunc = functionDict[self.entropy]
 
         # compute LR of x->y
-        resid = y - rho * x
+        resid = y - np.dot(rho, x.T).T
         if self.normalize:
-            resid /= np.std(resid)
+            resid /= np.std(resid, axis=0)
         L_xy = -1 * entFunc(x) - entFunc(resid)
 
         # compute LR of x<-y
-        resid = x - rho * y
+        resid = x - np.dot(rho, y.T).T
         if self.normalize:
-            resid /= np.std(resid)
+            resid /= np.std(resid, axis=0)
         L_yx = -1 * entFunc(y) - entFunc(resid)
 
         LR = (L_xy - L_yx)

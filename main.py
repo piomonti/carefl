@@ -6,11 +6,11 @@ import os
 import torch
 import yaml
 
-from runners.cause_effect_pairs_runner import run_cause_effect_pairs
+from runners.cause_effect_pairs_runner import run_cause_effect_pairs, plot_pairs
 from runners.counterfactual_trials import counterfactuals
+from runners.eeg_runner import run_eeg, plot_eeg
 from runners.intervention_trials import run_interventions, plot_interventions
 from runners.simulation_runner import run_simulations, plot_simulations
-from runners.video_runner import video_runner, plot_video
 
 
 def parse_input():
@@ -24,13 +24,13 @@ def parse_input():
     parser.add_argument('-p', '--pairs', action='store_true', help='Run Cause Effect Pairs experiments')
     parser.add_argument('-i', '--intervention', action='store_true', help='run intervention exp on toy example')
     parser.add_argument('-c', '--counterfactual', action='store_true', help='run counterfactual exp on toy example')
-    parser.add_argument('-v', '--video', action='store_true', help='run video exp')
+    parser.add_argument('-e', '--eeg', action='store_true', help='run eeg exp')
     # params to overwrite config file. useful for batch running in slurm
     parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
     parser.add_argument('-m', '--causal-mech', type=str, default='', help='Dataset to run synthetic experiments on.')
     parser.add_argument('-a', '--algorithm', type=str, default='', help='algorithm to run')
-    parser.add_argument('-n', '--n-points', type=int, default=0,
-                        help='number of simulated data points / also controls video_idx for arrow of time')
+    parser.add_argument('-n', '--n-points', type=int, default=-1,
+                        help='number of simulated data points --- also controls video_idx/pair_idx for real data exps')
 
     return parser.parse_args()
 
@@ -40,9 +40,10 @@ def debug_options(args, config):
         config.data.causal_mech = args.causal_mech
     if args.algorithm != '':
         config.algorithm = args.algorithm
-    if args.n_points != 0:
+    if args.n_points != -1:
         config.data.n_points = args.n_points  # for interventions / simulations
-        config.data.video_idx = args.n_points  # for arrow of time
+        config.data.pair_id = args.n_points  # for pairs
+        config.data.timeseries_idx = args.n_points  # for arrow of time on eeg
 
 
 def dict2namespace(config):
@@ -57,12 +58,10 @@ def dict2namespace(config):
 
 
 def make_and_set_dirs(args, config):
-    args.algo = config.algorithm.lower()
     if config.algorithm.lower() == 'carefl':
-        args.algo = os.path.join(args.algo, config.flow.architecture.lower())
-    _flow_alg = os.path.join('carefl', config.flow.architecture.lower())
-    args.sim_list = [_flow_alg, 'lrhyv', 'notears', 'reci', 'anm']
-    args.int_list = [_flow_alg, 'gp', 'linear']
+        args.algo = os.path.join('carefl' + 'ns' * (1 - config.flow.scale), config.flow.architecture.lower())
+    else:
+        args.algo = config.algorithm.lower()
     os.makedirs(args.run, exist_ok=True)
     args.output = os.path.join(args.run, args.doc, args.algo)
     os.makedirs(args.output, exist_ok=True)
@@ -79,8 +78,8 @@ def read_config(args):
         args.config = 'pairs.yaml'
     if args.counterfactual:
         args.config = 'counterfactuals.yaml'
-    if args.video:
-        args.config = 'video.yaml'
+    if args.eeg:
+        args.config = 'eeg.yaml'
 
 
 def main():
@@ -100,11 +99,11 @@ def main():
     torch.manual_seed(args.seed)
 
     if args.simulation:
+        # run algorithm on simulated data
+        # and save the results as pickle files which can be used later to plot Fig 1.
         args.doc = os.path.join('simulations', config.data.causal_mech)
         make_and_set_dirs(args, config)
         if not args.plot:
-            # run algorithm on simulated data
-            # and save the results as pickle files which can be used later to plot Fig 1.
             print('Running {} on {} synthetic experiments ({} simulations - {} points)'.format(config.algorithm,
                                                                                                config.data.causal_mech,
                                                                                                args.n_sims,
@@ -114,42 +113,42 @@ def main():
             plot_simulations(args, config)
 
     if args.pairs:
+        # Run proposed method on CauseEffectPair dataset
+        # The values for baseline methods were taken from their respective papers.
         args.doc = 'pairs'
         make_and_set_dirs(args, config)
-        # Run proposed method on CauseEffectPair dataset
-        # Percentage of correct causal direction is printed to standard output,
-        # and updated online after each new pair.
-        # The values for baseline methods were taken from their respective papers.
-        print('running cause effect pairs experiments ')
-        run_cause_effect_pairs(args, config)
+        if not args.plot:
+            print('running cause effect pairs experiments ')
+            run_cause_effect_pairs(args, config)
+        else:
+            plot_pairs(args, config)
 
     if args.intervention:
+        # Run proposed method to perform interventions on the toy example described in the manuscript
         args.doc = 'interventions'
         make_and_set_dirs(args, config)
         if not args.plot:
-            # Run proposed method to perform interventions on the toy example described in the manuscript
             print('running interventions on toy example')
-            # intervention(dim=4, results_dir=args.run)
             run_interventions(args, config)
         else:
             plot_interventions(args, config)
 
     if args.counterfactual:
+        # Run proposed method to perform counterfactuals on the toy example described in the manuscript
         args.doc = 'counterfactuals'
         make_and_set_dirs(args, config)
-        # Run proposed method to perform counterfactuals on the toy example described in the manuscript
         print('running counterfactuals on toy example')
         counterfactuals(args, config)
 
-    if args.video:
-        args.doc = 'video'
+    if args.eeg:
+        args.doc = 'eeg'
         make_and_set_dirs(args, config)
         config.training.seed = args.seed
         if not args.plot:
-            print('running video experiment')
-            video_runner(args, config)
+            print('running eeg experiment')
+            run_eeg(args, config)
         else:
-            plot_video(args, config)
+            plot_eeg(args, config)
 
 
 if __name__ == '__main__':

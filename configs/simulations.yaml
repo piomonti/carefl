@@ -1,7 +1,7 @@
-algorithm: 'CAReFl'  # in {'CAReFl', 'LRHyv', 'notears', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
+algorithm: 'carefl'  # in {'CAReFl', 'LRHyv', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
 
 data:
-  causal_mech: 'linear'  # in {linear, hoyer2009, nueralnet_l1}
+  causal_mech: 'linear'  # in {linear, hoyer2009, nueralnet_l1, 'highdim'}
   n_points: 250
   seed: 0
   # only relevant for interventions
@@ -14,7 +14,7 @@ flow:
   architecture: 'CL'
   net_class: 'MLP'  # in {'MLP', 'ARMLP', 'MLP4'}.lower()
   nl: 2
-  nh: 1
+  nh: 10
   batch_norm: false
   prior_dist: 'laplace'
   # for CL

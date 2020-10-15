@@ -1,19 +1,17 @@
-algorithm: 'carefl'
+algorithm: 'carefl'  # in {'CAReFl', 'LRHyv', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
 
 data:
-  video_idx: 0
-  image_size: 500
-  crop_size: 224
-  lag: [1, 2, 3]
-  pca: false
-  n_components: 100
+  timeseries_idx: 0
+  seed: 0
+  lag: [1]
 
 
+# only relevant for flows
 flow:
   architecture: 'CL'
   net_class: 'MLP'  # in {'MLP', 'ARMLP', 'MLP4'}.lower()
-  nl: 3
-  nh: 50
+  nl: 2
+  nh: 10
   batch_norm: false
   prior_dist: 'laplace'
   # for CL
@@ -21,12 +19,13 @@ flow:
   shift_base: true
   scale: true
 
+
 training:
-  epochs: 500
+  epochs: 100
   verbose: false
   split: .8
   seed: 0
-  batch_size: 64
+  batch_size: 128
 
 
 optim:
