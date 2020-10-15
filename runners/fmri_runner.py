@@ -40,10 +40,10 @@ def run_fmri(args, config):
     results = []
     for k in subject_int_ids.keys():
         # load in data
-        files = os.listdir(os.path.join('data', 'fmri', 'subject_data'))
-        files = [f for f in files if 'sub-' + str(k) + 'run' in f]
+        path = os.path.join('data', 'fmri', 'subject_data')
+        files = [f for f in os.listdir(path) if 'sub-' + str(k) + 'run' in f]
 
-        dat = [np.array(pd.read_csv(f, header=0)) for f in files]
+        dat = [np.array(pd.read_csv(os.path.join(path, f), header=0)) for f in files]
         scale_dat = [scale(d, with_mean=True) for d in dat]
 
         # ------ define train/test data
