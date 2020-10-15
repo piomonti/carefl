@@ -11,7 +11,6 @@ from runners.counterfactual_trials import counterfactuals
 from runners.eeg_runner import run_eeg, plot_eeg
 from runners.intervention_trials import run_interventions, plot_interventions
 from runners.simulation_runner import run_simulations, plot_simulations
-from runners.video_runner import video_runner, plot_video
 
 
 def parse_input():
@@ -26,7 +25,6 @@ def parse_input():
     parser.add_argument('-i', '--intervention', action='store_true', help='run intervention exp on toy example')
     parser.add_argument('-c', '--counterfactual', action='store_true', help='run counterfactual exp on toy example')
     parser.add_argument('-e', '--eeg', action='store_true', help='run eeg exp')
-    parser.add_argument('-v', '--video', action='store_true', help='run video exp')
     # params to overwrite config file. useful for batch running in slurm
     parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
     parser.add_argument('-m', '--causal-mech', type=str, default='', help='Dataset to run synthetic experiments on.')
@@ -44,7 +42,6 @@ def debug_options(args, config):
         config.algorithm = args.algorithm
     if args.n_points != -1:
         config.data.n_points = args.n_points  # for interventions / simulations
-        config.data.video_idx = args.n_points  # for arrow of time
         config.data.pair_id = args.n_points  # for pairs
         config.data.timeseries_idx = args.n_points  # for arrow of time on eeg
 
@@ -81,8 +78,6 @@ def read_config(args):
         args.config = 'pairs.yaml'
     if args.counterfactual:
         args.config = 'counterfactuals.yaml'
-    if args.video:
-        args.config = 'video.yaml'
     if args.eeg:
         args.config = 'eeg.yaml'
 
@@ -154,16 +149,6 @@ def main():
             run_eeg(args, config)
         else:
             plot_eeg(args, config)
-
-    if args.video:
-        args.doc = 'video'
-        make_and_set_dirs(args, config)
-        config.training.seed = args.seed
-        if not args.plot:
-            print('running video experiment')
-            video_runner(args, config)
-        else:
-            plot_video(args, config)
 
 
 if __name__ == '__main__':
