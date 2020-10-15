@@ -1,4 +1,4 @@
-algorithm: 'CAReFl'  # in {'CAReFl', 'LRHyv', 'notears', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
+algorithm: 'CAReFl'  # in {'CAReFl', 'LRHyv', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
 
 data:
   causal_mech: 'linear'  # in {linear, hoyer2009, nueralnet_l1}
@@ -7,8 +7,6 @@ data:
   # only relevant for interventions
   random: false
   expected: false
-
-device: cpu
 
 # only relevant for flows
 flow:

@@ -9,6 +9,7 @@ import yaml
 from runners.cause_effect_pairs_runner import run_cause_effect_pairs, plot_pairs
 from runners.counterfactual_trials import counterfactuals
 from runners.eeg_runner import run_eeg, plot_eeg
+from runners.fmri_runner import run_fmri
 from runners.intervention_trials import run_interventions, plot_interventions
 from runners.simulation_runner import run_simulations, plot_simulations
 
@@ -25,6 +26,8 @@ def parse_input():
     parser.add_argument('-i', '--intervention', action='store_true', help='run intervention exp on toy example')
     parser.add_argument('-c', '--counterfactual', action='store_true', help='run counterfactual exp on toy example')
     parser.add_argument('-e', '--eeg', action='store_true', help='run eeg exp')
+    parser.add_argument('-f', '--fmri', action='store_true', help='run fmri exp')
+
     # params to overwrite config file. useful for batch running in slurm
     parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
     parser.add_argument('-m', '--causal-mech', type=str, default='', help='Dataset to run synthetic experiments on.')
@@ -80,6 +83,8 @@ def read_config(args):
         args.config = 'counterfactuals.yaml'
     if args.eeg:
         args.config = 'eeg.yaml'
+    if args.fmri:
+        args.config = 'fmri.yaml'
 
 
 def main():
@@ -98,6 +103,7 @@ def main():
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
+    # causal discovery
     if args.simulation:
         # run algorithm on simulated data
         # and save the results as pickle files which can be used later to plot Fig 1.
@@ -123,6 +129,17 @@ def main():
         else:
             plot_pairs(args, config)
 
+    if args.eeg:
+        args.doc = 'eeg'
+        make_and_set_dirs(args, config)
+        config.training.seed = args.seed
+        if not args.plot:
+            print('running eeg experiment')
+            run_eeg(args, config)
+        else:
+            plot_eeg(args, config)
+
+    # interventiuons
     if args.intervention:
         # Run proposed method to perform interventions on the toy example described in the manuscript
         args.doc = 'interventions'
@@ -133,22 +150,20 @@ def main():
         else:
             plot_interventions(args, config)
 
+    if args.fmri:
+        # Run proposed method to perform counterfactuals on the toy example described in the manuscript
+        args.doc = 'fmri'
+        make_and_set_dirs(args, config)
+        print('running interventions on es-fMRI data')
+        run_fmri(args, config)
+
+    # counterfactuals
     if args.counterfactual:
         # Run proposed method to perform counterfactuals on the toy example described in the manuscript
         args.doc = 'counterfactuals'
         make_and_set_dirs(args, config)
         print('running counterfactuals on toy example')
         counterfactuals(args, config)
-
-    if args.eeg:
-        args.doc = 'eeg'
-        make_and_set_dirs(args, config)
-        config.training.seed = args.seed
-        if not args.plot:
-            print('running eeg experiment')
-            run_eeg(args, config)
-        else:
-            plot_eeg(args, config)
 
 
 if __name__ == '__main__':
