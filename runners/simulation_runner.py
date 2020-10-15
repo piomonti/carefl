@@ -74,13 +74,14 @@ def run_simulations(args, config):
 def plot_simulations(args, config):
     from configs.plotting import color_dict, label_dict, font_dict
     # produce a plot of synthetic results
-    title_dic = {'nueralnet_l1': "Neural network SEM" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + z_2 \right)$",
+    title_dic = {'nueralnet_l1': "Post nonlinear SEM" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + z_2 \right)$",
                  'linear': "Linear SEM\n" + r"$x_2 = x_1 + z_2 $",
-                 'hoyer2009': "Nonlinear SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + z_2 $",
+                 'hoyer2009': "Additive noise SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + z_2 $",
                  'mnm': "Affine noise SEM\n" + r"$x_2 = \sigma(x_1) + \frac{1}{2} x_1^2 + \sigma(x_1)z_2$",
                  'highdim': "4-dimensional SEM - polynomial",
                  'highdim_sigmoid': "4-dimensional SEM - sigmoid",
-                 'veryhighdim': "20-dimensional SEM\n" + r"$\mathbf{x}_{11:20} = \mathbf{g}(\mathbf{x}_{1:10}, \mathbf{z}_{11:20})$"}
+                 'veryhighdim': "20-dimensional SEM\n" +
+                                r"$\mathbf{x}_{11:20} = \mathbf{g}(\mathbf{x}_{1:10}, \mathbf{z}_{11:20})$"}
 
     # define some parameters
     nvals = [25, 50, 75, 100, 150, 250, 500]
@@ -107,17 +108,17 @@ def plot_simulations(args, config):
     for a in algos:
         ax1.plot(nvals, res_all['linear'][a], color=color_dict[a], marker='o')
         ax2.plot(nvals, res_all['hoyer2009'][a], color=color_dict[a], marker='o')
-        ax3.plot(nvals, res_all['nueralnet_l1'][a], color=color_dict[a], marker='o')
+        ax4.plot(nvals, res_all['nueralnet_l1'][a], color=color_dict[a], marker='o')
         # ax4.plot(nvals, res_all['highdim'][a], color=color_dict[a], marker='o')
-        ax5.plot(nvals, res_all['mnm'][a], color=color_dict[a], marker='o')
-        ax4.plot(nvals, res_all['veryhighdim'][a], color=color_dict[a], marker='o', label=label_dict[a])
+        ax3.plot(nvals, res_all['mnm'][a], color=color_dict[a], marker='o')
+        ax5.plot(nvals, res_all['veryhighdim'][a], color=color_dict[a], marker='o', label=label_dict[a])
 
     ax1.set_title(title_dic['linear'], fontsize=font_dict['title'])
     ax2.set_title(title_dic['hoyer2009'], fontsize=font_dict['title'])
-    ax3.set_title(title_dic['nueralnet_l1'], fontsize=font_dict['title'])
+    ax4.set_title(title_dic['nueralnet_l1'], fontsize=font_dict['title'])
     # ax4.set_title(title_dic['highdim'], fontsize=font_dict['title'])
-    ax5.set_title(title_dic['mnm'], fontsize=font_dict['title'])
-    ax4.set_title(title_dic['veryhighdim'], fontsize=font_dict['title'])
+    ax3.set_title(title_dic['mnm'], fontsize=font_dict['title'])
+    ax5.set_title(title_dic['veryhighdim'], fontsize=font_dict['title'])
     ax1.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
     ax2.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
     ax3.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
@@ -131,10 +132,13 @@ def plot_simulations(args, config):
     ax5.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
     ax4.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
     fig.legend(  # The labels for each line
-        loc="center right",  # Position of legend
-        borderaxespad=0.2,  # Small spacing around legend box
-        title="Algorithm"  # Title for the legend
+        # loc="center right",  # Position of legend
+        # borderaxespad=0.2,  # Small spacing around legend box
+        title="Algorithm",  # Title for the legend
+        fontsize=11,
+        bbox_to_anchor=(0.2, 0.54),
+        framealpha=.7,
     )
     plt.tight_layout()
-    plt.subplots_adjust(right=0.9)
+    # plt.subplots_adjust(right=0.9)
     plt.savefig(os.path.join(args.run, fig_save_name(config)), dpi=300)

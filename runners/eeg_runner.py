@@ -79,7 +79,7 @@ def plot_eeg(args, config):
         for idx in range(118):
             config.data.timeseries_idx = idx
             res = pickle.load(
-                open(os.path.join('results', 'eeg', a, res_save_name(config, to_algos(a), obs_list)), 'rb'))
+                open(os.path.join(args.run, 'eeg', a, res_save_name(config, to_algos(a), obs_list)), 'rb'))
             if res[n_obs]['correct'] >= .5:
                 correct.append(idx)
             conf[idx] = np.abs(np.mean(res[500]['p']))
@@ -108,11 +108,15 @@ def plot_eeg(args, config):
     ax2.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
 
     fig.legend(  # The labels for each line
-        loc="center right",  # Position of legend
-        borderaxespad=0.2,  # Small spacing around legend box
+        # loc="lower left",  # Position of legend
+        # borderaxespad=0.2,  # Small spacing around legend box
         title="Algorithm",  # Title for the legend
-        fontsize=11
+        fontsize=11,
+        bbox_to_anchor=(0.49, 0.5),
+        framealpha=.5,
+        # frameon=False,
+        # prop={'weight':'bold'}
     )
     plt.tight_layout()
-    plt.subplots_adjust(right=0.84)
-    plt.savefig(os.path.join(args.run, fig_save_name(config, [150, 500])), dpi=300)
+    # plt.subplots_adjust(right=0.84)
+    plt.savefig(os.path.join(args.run, fig_save_name(config, obs_list)), dpi=300)
