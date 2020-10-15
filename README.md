@@ -73,15 +73,15 @@ This project uses normalizing flows implementations from [this](https://github.c
 To run simulations in parallel:
 ```bash
 for SIZE in 25 50 75 100 150 250 500; do
-    for ALGO in LRHyv notears RECI ANM; do
-        for DSET in linear hoyer2009 nueralnet_l1 highdim; do
+    for ALGO in LRHyv RECI ANM; do
+        for DSET in linear hoyer2009 nueralnet_l1 mnm veryhighdim; do
             sbatch slurm_main_cpu.sbatch -s -m $DSET -a $ALGO -n $SIZE
         done
     done
 done
 ALGO=carefl
 for SIZE in 25 50 75 100 150 250 500; do
-    for DSET in linear hoyer2009 nueralnet_l1 highdim; do
+    for DSET in linear hoyer2009 nueralnet_l1 mnm veryhighdim; do
         sbatch slurm_main_cpu.sbatch -s -m $DSET -a $ALGO -n $SIZE
     done
 done
@@ -101,4 +101,26 @@ for SIZE in 250 500 750 1000 1250 1500 2000 2500; do
     sbatch slurm_main_cpu.sbatch -i -a $ALGO -n $SIZE
 done
 
+```
+
+___
+To run EEG:
+```bash
+for ALGO in LRHyv RECI ANM; do
+    for IDX in {0..117}; do
+        sbatch slurm_main_cpu.sbatch -e -n $IDX -a $ALGO --n-sims 11
+    done
+done
+
+for IDX in {0..117}; do
+    sbatch slurm_main.sbatch -e -n $IDX --n-sims 11
+done
+```
+
+___
+To run pairs:
+```bash
+for IDX in {1..108}; do
+    sbatch slurm_main_cpu.sbatch -p -n $IDX --n-sims 10
+done
 ```
