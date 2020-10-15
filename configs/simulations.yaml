@@ -5,7 +5,7 @@ data:
   n_points: 250
   seed: 0
   # only relevant for interventions
-  random: false
+  random: true
   expected: false
 
 
@@ -24,7 +24,7 @@ flow:
 
 
 training:
-  epochs: 100
+  epochs: 200
   verbose: false
   split: .8
   seed: 0

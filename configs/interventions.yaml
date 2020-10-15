@@ -1,7 +1,7 @@
-algorithm: 'carefl'  # in {'CAReFl', 'LRHyv', 'RECI', 'ANM'}.lower() OR in {'carefl', 'gp', 'linear'}
+algorithm: 'carefl'  # in {'carefl', 'gp', 'linear'}
 
 data:
-  causal_mech: 'linear'  # in {linear, hoyer2009, nueralnet_l1}
+  causal_mech: 'linear'
   n_points: 250
   seed: 0
   # only relevant for interventions

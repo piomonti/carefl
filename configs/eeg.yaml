@@ -3,29 +3,29 @@ algorithm: 'carefl'  # in {'CAReFl', 'LRHyv', 'RECI', 'ANM'} OR in {'CAReFl', 'g
 data:
   timeseries_idx: 0
   seed: 0
-  lag: [1]
+  lag: [1, 2, 3]
 
 
 # only relevant for flows
 flow:
   architecture: 'CL'
-  net_class: 'MLP'  # in {'MLP', 'ARMLP', 'MLP4'}.lower()
-  nl: 2
+  net_class: 'MLP4'  # in {'MLP', 'ARMLP', 'MLP4'}.lower()
+  nl: 4
   nh: 10
   batch_norm: false
   prior_dist: 'laplace'
   # for CL
-  scale_base: true
-  shift_base: true
+  scale_base: false
+  shift_base: false
   scale: true
 
 
 training:
-  epochs: 100
+  epochs: 400
   verbose: false
   split: .8
   seed: 0
-  batch_size: 128
+  batch_size: 32
 
 
 optim:
