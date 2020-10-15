@@ -1,59 +1,16 @@
-# Code for "Autoregressive flow-based causal discovery and inference"
+# Code for "Causal Autoregressive Flow"
 
 
 This repository contains code to reproduce results presented in "Autoregressive flow-based causal
 discovery and inference", presented at the 2nd ICML workshop on Invertible Neural Networks,
 Normalizing Flows, and Explicit Likelihood Models (2020).
 
-The `main.py` script is the main gateway to reproduce the experiments details in the mansucript.
-Run `python main.py -h` to learn about the arguments of the script:
-```
-usage: main.py [-h] [--dataset DATASET] [--nSims NSIMS]
-               [--resultsDir RESULTSDIR] [-s] [-p] [-i] [-c]
+The `main.py` script is the main gateway to reproduce the experiments detailed in the mansucript, and is straightforward
+to use. Type `python main.py -h` to learn about the options.
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --dataset DATASET     Dataset to run synthetic CD experiments on. Should be
-                        either linear, hoyer2009 or nueralnet_l1 or all to run
-                        all
-  --nSims NSIMS         Number of synthetic simulations to run
-  --resultsDir RESULTSDIR
-                        Path for saving results.
-  -s, --simulation      run the CD exp on synthetic data
-  -p, --pairs           run Cause Effect Pairs experiments
-  -i, --intervention    run intervention exp on toy example
-  -c, --counterfactual  run counterfactual exp on toy example
-```
-
-___
-To reproduce causal discovery simulations run:
-```
-python main.py -s --dataset all
-```
-This will run our proposed method, as well as baseline methods on the simulated data, as described in the manuscript.
-Then it will plot Figure 1.
-
-___
-To run the proposed method on CauseEffectPair dataset, use:
-```
-python main.py -p
-```
-The percentage of correct inferred causal directions is printed to standard output,
-and updated online after each new pair.
-The values for baseline methods were taken from their respective papers.
-
-___
-To perform interventions using the proposed method on the toy example described in the manuscript, run:
-```
-python main.py -i
-```
-
-___
-To perform counterfactuals using the proposed method on the toy example described in the manuscript, run:
-```
-python main.py -c
-```
-
+Hyperparameters can be changed through the configuration files under `configs/`.
+The `main.py` is setup to read the corresponding config file for each experiment, but this can be overwritten suing the 
+`-y` or `--config` flag.
 
 ### Dependencies
 This project was tested with the following versions:
@@ -66,14 +23,16 @@ This project was tested with the following versions:
 - matplotlib 3.2.1
 - seaborn 0.10
 
-This project uses normalizing flows implementations from [this](https://github.com/karpathy/pytorch-normalizing-flows) library.
+This project uses normalizing flows implementation from [this](https://github.com/karpathy/pytorch-normalizing-flows) library.
 
 ### Slurm usage
+Experiments where run using the SLURM system. The `slurm_main_cpu.sbatch` is used to run jobs on CPU, and
+ `slurm_main.sbatch` for the GPU.
 
 To run simulations in parallel:
 ```bash
 for SIZE in 25 50 75 100 150 250 500; do
-    for ALGO in LRHyv RECI ANM; do
+    for ALGO in lrhyv reci anm; do
         for DSET in linear hoyer2009 nueralnet_l1 mnm veryhighdim; do
             sbatch slurm_main_cpu.sbatch -s -m $DSET -a $ALGO -n $SIZE
         done
@@ -87,9 +46,9 @@ for SIZE in 25 50 75 100 150 250 500; do
 done
 
 ```
-___
 
-To run interventions in parallel:
+___
+To run interventions:
 ```bash
 for SIZE in 250 500 750 1000 1250 1500 2000 2500; do
     for ALGO in gp linear; do
@@ -100,21 +59,26 @@ ALGO=carefl
 for SIZE in 250 500 750 1000 1250 1500 2000 2500; do
     sbatch slurm_main_cpu.sbatch -i -a $ALGO -n $SIZE
 done
-
 ```
 
 ___
-To run EEG:
+To run arrow of time on EEG data:
 ```bash
 for ALGO in LRHyv RECI ANM; do
     for IDX in {0..117}; do
         sbatch slurm_main_cpu.sbatch -e -n $IDX -a $ALGO --n-sims 11
     done
 done
-
+ALGO=carefl
 for IDX in {0..117}; do
-    sbatch slurm_main.sbatch -e -n $IDX --n-sims 11
+    sbatch slurm_main.sbatch -e -n $IDX -a $ALGO --n-sims 11
 done
+```
+
+___
+To run interventions on fMRI data (this experiment outputs to standard output):
+```bash
+python main.py -f
 ```
 
 ___
@@ -124,3 +88,5 @@ for IDX in {1..108}; do
     sbatch slurm_main_cpu.sbatch -p -n $IDX --n-sims 10
 done
 ```
+
+
