@@ -5,7 +5,7 @@ import pickle
 import seaborn as sns
 
 from data.eeg import eeg_data
-from models import RECI, ANM, EntropyLR, CAReFl, LinearNOTEARS
+from models import RECI, ANM, EntropyLR, CAReFl
 
 
 def res_save_name(config, algo, obs):
@@ -46,8 +46,6 @@ def run_eeg(args, config):
                 mod = ANM()
             elif algo.lower() == 'reci':
                 mod = RECI(form='GP', scale_input=True)
-            elif algo.lower() == 'notears':
-                mod = LinearNOTEARS(lambda1=.01, loss_type='l2', w_threshold=0)
             elif algo.lower() == 'carefl':
                 mod = CAReFl(config)
             else:

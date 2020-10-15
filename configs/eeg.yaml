@@ -1,4 +1,4 @@
-algorithm: 'carefl'  # in {'CAReFl', 'LRHyv', 'notears', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
+algorithm: 'carefl'  # in {'CAReFl', 'LRHyv', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
 
 data:
   timeseries_idx: 0

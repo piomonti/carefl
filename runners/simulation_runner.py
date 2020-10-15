@@ -9,7 +9,7 @@ import pickle
 import seaborn as sns
 
 from data.generate_synth_data import gen_synth_causal_dat, intervention_sem
-from models import RECI, ANM, EntropyLR, CAReFl, LinearNOTEARS
+from models import RECI, ANM, EntropyLR, CAReFl
 
 
 def res_save_name(config, algo):
@@ -56,8 +56,6 @@ def run_simulations(args, config):
             mod = RECI(form=reci_form_dict[causal_mechanism], scale_input=True)
         elif algo.lower() == 'carefl':
             mod = CAReFl(config)
-        elif algo.lower() == 'notears':
-            mod = LinearNOTEARS(lambda1=.01, loss_type='l2', w_threshold=0)
         else:
             raise ValueError('Unknown algorithm')
         p, direction = mod.predict_proba(data=data)
