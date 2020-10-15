@@ -6,7 +6,7 @@ import os
 import torch
 import yaml
 
-from runners.cause_effect_pairs_runner import run_cause_effect_pairs, plot_pairs
+from runners.cause_effect_pairs_runner import run_cause_effect_pairs
 from runners.counterfactual_trials import counterfactuals
 from runners.eeg_runner import run_eeg, plot_eeg
 from runners.fmri_runner import run_fmri
@@ -123,11 +123,8 @@ def main():
         # The values for baseline methods were taken from their respective papers.
         args.doc = 'pairs'
         make_and_set_dirs(args, config)
-        if not args.plot:
-            print('running cause effect pairs experiments ')
-            run_cause_effect_pairs(args, config)
-        else:
-            plot_pairs(args, config)
+        print('running cause effect pairs experiments ')
+        run_cause_effect_pairs(args, config)
 
     if args.eeg:
         args.doc = 'eeg'
