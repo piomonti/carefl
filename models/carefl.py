@@ -12,7 +12,7 @@ from torch.distributions import Laplace, Uniform, TransformedDistribution, Sigmo
 from torch.utils.data import DataLoader, Dataset
 
 from data.generate_synth_data import CustomSyntheticDatasetDensity
-from nflib import AffineCL, NormalizingFlowModel, MLP1layer, MAF, NSF_AR, ARMLP, MLP4
+from nflib import AffineCL, NormalizingFlowModel, MLP1layer, MAF, NSF_AR, ARMLP, MLP4, GeneralMLP
 
 
 class CAReFl:
@@ -54,6 +54,8 @@ class CAReFl:
             net_class = MLP1layer
         elif self.config.flow.net_class.lower() == 'mlp4':
             net_class = MLP4
+        elif self.config.flow.net_class.lower() in ['gmlp', 'generalmlp']:
+            net_class = GeneralMLP
         elif self.config.flow.net_class.lower() == 'armlp':
             net_class = ARMLP
         else:

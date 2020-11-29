@@ -39,8 +39,7 @@ class PositionalEncoder(nn.Module):
 
 
 class MLP1layer(nn.Module):
-    """ a simple 4-layer MLP """
-
+    """ a simple 1-layer MLP """
     def __init__(self, nin, nout, nh):
         super().__init__()
         self.net = nn.Sequential(
@@ -55,7 +54,6 @@ class MLP1layer(nn.Module):
 
 class MLP4(nn.Module):
     """ a simple 4-layer MLP """
-
     def __init__(self, nin, nout, nh):
         super().__init__()
         self.net = nn.Sequential(
@@ -67,6 +65,24 @@ class MLP4(nn.Module):
             nn.LeakyReLU(0.2),
             nn.Linear(nh, nout),
         )
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class GeneralMLP(nn.Module):
+    """ a simple MLP """
+    def __init__(self, nin, nout, nh, nl=1):
+        super().__init__()
+        self.net = []
+        hs = [nin] + [nh]*nl + [nout]
+        for h0, h1 in zip(hs, hs[1:]):
+            self.net.extend([
+                nn.Linear(h0, h1),
+                nn.LeakyReLU(0.2),
+            ])
+        self.net.pop()
+        self.net = nn.Sequential(*self.net)
 
     def forward(self, x):
         return self.net(x)

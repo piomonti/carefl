@@ -40,7 +40,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from nflib.nets import LeafParam, MLP4
+from nflib.nets import LeafParam, MLP4, GeneralMLP
 
 
 class AffineConstantFlow(nn.Module):
@@ -101,7 +101,7 @@ class AffineCL(nn.Module):
     """
 
     def __init__(self, dim, parity=False, net_class=MLP4, nh=24, scale=True, shift=True,
-                 scale_base=False, shift_base=False, checkerboard=False):
+                 scale_base=False, shift_base=False, checkerboard=False, nl=1):
         super().__init__()
         self.dim = dim
         self.parity = parity
@@ -111,9 +111,15 @@ class AffineCL(nn.Module):
         self.s_base = nn.Parameter(torch.randn(1, self.dim // 2), requires_grad=True) if scale_base else None
         self.t_base = nn.Parameter(torch.randn(1, self.dim // 2), requires_grad=True) if shift_base else None
         if scale:
-            self.s_cond = net_class(self.dim // 2, self.dim // 2, nh)
+            if net_class is GeneralMLP:
+                self.s_cond = net_class(self.dim // 2, self.dim // 2, nh, nl)
+            else:
+                self.s_cond = net_class(self.dim // 2, self.dim // 2, nh)
         if shift:
-            self.t_cond = net_class(self.dim // 2, self.dim // 2, nh)
+            if net_class is GeneralMLP:
+                self.t_cond = net_class(self.dim // 2, self.dim // 2, nh, nl)
+            else:
+                self.t_cond = net_class(self.dim // 2, self.dim // 2, nh)
 
     def forward(self, x):
         if self.checkerboard:
