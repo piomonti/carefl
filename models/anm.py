@@ -7,9 +7,12 @@
 # this code is taken from cdt toolbox as it was failing
 
 import numpy as np
+import torch
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import scale
+
+from nflib.nets import MLP1layer, MLP4
 
 
 def rbf_dot2(p1, p2, deg):
@@ -118,7 +121,7 @@ class ANM:
        https://papers.nips.cc/paper/3548-nonlinear-causal-discovery-with-additive-noise-models.pdf
     """
 
-    def __init__(self, method='gp'):
+    def __init__(self, method='gp', config=None):
         """Init the model."""
         assert method in ['gp', 'linear']
         self.method = method
@@ -128,9 +131,17 @@ class ANM:
         self.dim = None
         self.roots = None
         self.effects = None
+        self.config = config  # only for when method == 'nn'
 
     def _get_regressor(self):
-        return GaussianProcessRegressor() if self.method == 'gp' else LinearRegression()
+        if self.method.lower() == 'gp':
+            return GaussianProcessRegressor()
+        elif self.method.lower() == 'nn':
+            return NNRegressor(nh=self.config.flow.nh, net_class=self.config.flow.net_class,
+                               n_epochs=self.config.training.epochs, lr=self.config.training.lr,
+                               beta1=self.config.training.beta1)
+        else:
+            return LinearRegression()
 
     def predict_proba(self, data):
         """Prediction method for pairwise causal inference using the ANM model.
@@ -254,3 +265,34 @@ class DictIdx:
 
     def set_dict(self, dic):
         self.dic = dic
+
+
+class NNRegressor:
+    def __init__(self, nh, net_class='mlp', n_epochs=200, lr=0.001, beta1=0.9):
+        if net_class.lower() == 'mlp':
+            self.net = MLP1layer(1, 1, nh)
+        elif net_class.lower() == 'mlp4':
+            self.net = MLP4(1, 1, nh)
+        else:
+            raise ValueError(net_class)
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.beta1 = beta1
+
+    def fit(self, x, y):
+        x, y = torch.from_numpy(x.astype(np.float32)).reshape((-1, 1)), torch.from_numpy(y.astype(np.float32)).reshape(
+            (-1, 1))
+        loss_func = torch.nn.MSELoss()
+        optimizer = torch.optim.Adam(self.net.parameters(), lr=0.001, betas=(self.beta1, 0.999))
+        self.net.train()
+        for _ in range(self.n_epochs):
+            y_p = self.net(x)
+            loss = loss_func(y_p, y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        return self
+
+    def predict(self, x):
+        x = torch.from_numpy(x.astype(np.float32)).reshape((-1, 1))
+        return self.net(x).detach().cpu().numpy().squeeze()

@@ -23,6 +23,8 @@ flow:
   shift_base: true
   scale: true
 
+anm:
+  method: 'nn'
 
 training:
   epochs: 200

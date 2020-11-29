@@ -56,7 +56,7 @@ def run_simulations(args, config):
         if algo.lower() == 'lrhyv':
             mod = EntropyLR()
         elif algo.lower() == 'anm':
-            mod = ANM()
+            mod = ANM(method=config.anm.method, config=config)
         elif algo.lower() == 'reci':
             mod = RECI(form=reci_form_dict[causal_mechanism], scale_input=True)
         elif algo.lower() == 'carefl':
