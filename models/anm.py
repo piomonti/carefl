@@ -137,6 +137,7 @@ class ANM:
         if self.method.lower() == 'gp':
             return GaussianProcessRegressor()
         elif self.method.lower() == 'nn':
+            torch.manual_seed(self.config.training.seed)
             return NNRegressor(nh=self.config.flow.nh, net_class=self.config.flow.net_class,
                                n_epochs=self.config.training.epochs, lr=self.config.training.lr,
                                beta1=self.config.training.beta1)
