@@ -35,6 +35,8 @@ def parse_input():
     parser.add_argument('-n', '--n-points', type=int, default=-1,
                         help='number of simulated data points --- also controls video_idx/pair_idx for real data exps')
     parser.add_argument('--noise-dist', type=str, default='', help='noise dist')
+    parser.add_argument('--nl', type=int, default=-1, help='number of layer for flow')
+    parser.add_argument('--nh', type=int, default=-1, help='number of hidden units for nets')
 
     return parser.parse_args()
 
@@ -50,6 +52,10 @@ def debug_options(args, config):
         config.data.timeseries_idx = args.n_points  # for arrow of time on eeg
     if args.noise_dist != '':
         config.data.noise_dist = args.noise_dist
+    if args.nl != -1:
+        config.flow.nl = args.nl
+    if args.nh != -1:
+        config.flow.nh = args.nh
 
 
 def dict2namespace(config):
