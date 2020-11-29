@@ -7,7 +7,7 @@ def sigmoid(x):
     return 1. / (1 + np.exp(-x))
 
 
-def gen_synth_causal_dat(nObs=100, causalFunc='nueralnet_l1'):
+def gen_synth_causal_dat(nObs=100, causalFunc='nueralnet_l1', noise_dist='laplace'):
     """
     generate causal data where one variable causes another
     Inputs:
@@ -23,7 +23,16 @@ def gen_synth_causal_dat(nObs=100, causalFunc='nueralnet_l1'):
                       }
 
     # scale divided by np.sqrt(2) to ensure std of 1
-    N = (np.random.laplace(loc=0, scale=1. / np.sqrt(2), size=(nObs, 2)))
+    if noise_dist == 'laplace':
+        N = np.random.laplace(loc=0, scale=1. / np.sqrt(2), size=(nObs, 2))
+    elif noise_dist == 'gaussian':
+        N = np.random.normal(loc=0, scale=1., size=(nObs, 2))
+    elif noise_dist == 'cauchy':
+        N = np.random.standard_cauchy(size=(nObs, 2))
+    elif noise_dist == 'student':
+        N = np.random.standard_t(df=5, size=(nObs, 2))
+    else:
+        raise ValueError(noise_dist)
 
     X = np.zeros((nObs, 2))
     X[:, 0] = N[:, 0]
@@ -38,7 +47,8 @@ def gen_synth_causal_dat(nObs=100, causalFunc='nueralnet_l1'):
     return X, mod_dir
 
 
-def intervention_sem(n_obs, dim=4, seed=0, random=True, shuffle=False, nonlin='poly', multiplicative=False):
+def intervention_sem(n_obs, dim=4, seed=0, noise_dist='laplace',
+                     random=True, shuffle=False, nonlin='poly', multiplicative=False):
     np.random.seed(seed)
     if dim == 4:
         # generate some 4D data according to the following SEM
@@ -51,8 +61,16 @@ def intervention_sem(n_obs, dim=4, seed=0, random=True, shuffle=False, nonlin='p
         #   X_3 = sigmoid(sigmoid(c_1 * X_1 + c_2 * X_2) + N_3)  -- c_1 and c_2 random
         #   X_4 = sigmoid(sigmoid(c_3 * X_1) + c_4 * X_2^3 + N_4)  -- c_3 and c_4 random
         # causes
-        X_1 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
-        X_2 = np.random.laplace(0, 1 / np.sqrt(2), size=n_obs)
+        if noise_dist == 'laplace':
+            X_1, X_2 = np.random.laplace(loc=0, scale=1. / np.sqrt(2), size=(n_obs, 2)).T
+        elif noise_dist == 'gaussian':
+            X_1, X_2 = np.random.normal(loc=0, scale=1., size=(n_obs, 2)).T
+        elif noise_dist == 'cauchy':
+            X_1, X_2 = np.random.standard_cauchy(size=(n_obs, 2)).T
+        elif noise_dist == 'student':
+            X_1, X_2 = np.random.standard_t(df=5, size=(n_obs, 2)).T
+        else:
+            raise ValueError(noise_dist)
         # effects
         if nonlin == 'poly':
             coeffs = np.random.uniform(.1, .9, 2) if random else [.5, .5]
@@ -90,7 +108,16 @@ def intervention_sem(n_obs, dim=4, seed=0, random=True, shuffle=False, nonlin='p
         #       sigmoid(sigmoid(sum_i<6 c_i * X_i) + N_j)
         #       sigmoid(sum_i>5 c_i * sigmoid(X_i)^{i-5} + N_j))
         # effects
-        X = np.random.laplace(0, 1 / np.sqrt(2), size=(n_obs, 10))
+        if noise_dist == 'laplace':
+            X = np.random.laplace(loc=0, scale=1. / np.sqrt(2), size=(n_obs, 10))
+        elif noise_dist == 'gaussian':
+            X = np.random.normal(loc=0, scale=1., size=(n_obs, 10))
+        elif noise_dist == 'cauchy':
+            X = np.random.standard_cauchy(size=(n_obs, 10))
+        elif noise_dist == 'student':
+            X = np.random.standard_t(df=5, size=(n_obs, 10))
+        else:
+            raise ValueError(noise_dist)
         # causes:
         coeffs = np.random.normal(loc=1, size=(10, 10)) if random else .5 * np.ones((10, 10))
         dag = np.zeros((20, 20))

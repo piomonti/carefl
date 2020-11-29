@@ -34,6 +34,7 @@ def parse_input():
     parser.add_argument('-a', '--algorithm', type=str, default='', help='algorithm to run')
     parser.add_argument('-n', '--n-points', type=int, default=-1,
                         help='number of simulated data points --- also controls video_idx/pair_idx for real data exps')
+    parser.add_argument('--noise-dist', type=str, default='', help='noise dist')
 
     return parser.parse_args()
 
@@ -47,6 +48,8 @@ def debug_options(args, config):
         config.data.n_points = args.n_points  # for interventions / simulations
         config.data.pair_id = args.n_points  # for pairs
         config.data.timeseries_idx = args.n_points  # for arrow of time on eeg
+    if args.noise_dist != '':
+        config.data.noise_dist = args.noise_dist
 
 
 def dict2namespace(config):

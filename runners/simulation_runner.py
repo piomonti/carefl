@@ -15,18 +15,22 @@ from models import RECI, ANM, EntropyLR, CAReFl
 def res_save_name(config, algo):
     if 'carefl' not in algo.lower():
         return 'sim_{}.p'.format(config.data.n_points)
-    return 'sim_{}_{}_{}_{}_{}.p'.format(config.data.n_points,
-                                         config.flow.architecture.lower(),
-                                         config.flow.net_class.lower(),
-                                         config.flow.nl,
-                                         config.flow.nh)
+    return 'sim_{}_{}_{}_{}_{}_{}_{}.p'.format(config.data.n_points,
+                                               config.flow.architecture.lower(),
+                                               config.flow.net_class.lower(),
+                                               config.flow.nl,
+                                               config.flow.nh,
+                                               config.flow.prior_dist,
+                                               config.data.noise_dist)
 
 
 def fig_save_name(config):
-    return 'sim_causal_dir_{}_{}_{}_{}.pdf'.format(config.flow.architecture.lower(),
-                                                   config.flow.net_class.lower(),
-                                                   config.flow.nl,
-                                                   config.flow.nh)
+    return 'sim_causal_dir_{}_{}_{}_{}_{}_{}.pdf'.format(config.flow.architecture.lower(),
+                                                         config.flow.net_class.lower(),
+                                                         config.flow.nl,
+                                                         config.flow.nh,
+                                                         config.flow.prior_dist,
+                                                         config.data.noise_dist)
 
 
 def run_simulations(args, config):
@@ -43,11 +47,12 @@ def run_simulations(args, config):
             dim = 20 if causal_mechanism == 'veryhighdim' else 4
             nonlin = 'poly' if causal_mechanism == 'highdim' else 'sigmoid'  # doesn't matter for 20dim
             data, _, dag = intervention_sem(n_obs=n_points, dim=dim, seed=sim, random=config.data.random, shuffle=True,
-                                            nonlin=nonlin)
+                                            nonlin=nonlin, noise_dist=config.data.noise_dist)
             mod_dir = 'x->y' if np.all(dag[0] == 0) else 'y->x'
         else:
             np.random.seed(sim)
-            data, mod_dir = gen_synth_causal_dat(nObs=n_points, causalFunc=causal_mechanism)
+            data, mod_dir = gen_synth_causal_dat(nObs=n_points, causalFunc=causal_mechanism,
+                                                 noise_dist=config.data.noise_dist)
         if algo.lower() == 'lrhyv':
             mod = EntropyLR()
         elif algo.lower() == 'anm':
