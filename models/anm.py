@@ -287,14 +287,17 @@ class NNRegressor:
             raise ValueError(self.net_class)
 
     def _update_dim(self, x):
-        self.dim = x.shape[-1]
+        if x.ndim == 1:
+            self.dim = 1
+        else:
+            self.dim = x.shape[-1]
 
     def fit(self, x, y):
         self._update_dim(x)
         self._init_net()
 
-        x, y = torch.from_numpy(x.astype(np.float32)).reshape((-1, 1)), torch.from_numpy(y.astype(np.float32)).reshape(
-            (-1, 1))
+        x, y = torch.from_numpy(x.astype(np.float32)).reshape((-1, self.dim)), torch.from_numpy(
+            y.astype(np.float32)).reshape((-1, self.dim))
         loss_func = torch.nn.MSELoss()
         optimizer = torch.optim.Adam(self.net.parameters(), lr=0.001, betas=(self.beta1, 0.999))
         self.net.train()
@@ -307,5 +310,5 @@ class NNRegressor:
         return self
 
     def predict(self, x):
-        x = torch.from_numpy(x.astype(np.float32)).reshape((-1, 1))
+        x = torch.from_numpy(x.astype(np.float32)).reshape((-1, self.dim))
         return self.net(x).detach().cpu().numpy().squeeze()
