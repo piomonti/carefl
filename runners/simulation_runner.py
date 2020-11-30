@@ -92,22 +92,24 @@ def plot_simulations(args, config):
 
     # define some parameters
     nvals = [25, 50, 75, 100, 150, 250, 500]
-    algos = ['carefl', 'careflns', 'lrhyv', 'reci', 'anm']
-    to_algos = lambda s: s.split('/')[0]
+    algos = ['carefl', 'careflns', 'lrhyv', 'reci', 'anm', 'anm-nm']
+    # to_algos = lambda s: s.split('/')[0]
+    to_algos = lambda s: 'anm' if s == 'anm-nn' else s
     sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'highdim', 'highdim_sigmoid', 'veryhighdim', 'mnm']
+    sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'veryhighdim', 'mnm']
     res_all = {s: {a: [] for a in algos} for s in sim_type}
 
     _flow = os.path.join('carefl', config.flow.architecture.lower())
     _flow_ns = os.path.join('careflns', config.flow.architecture.lower())
-    sim_list = [_flow, _flow_ns, 'lrhyv', 'reci', 'anm']
+    algo_path = [_flow, _flow_ns, 'lrhyv', 'reci', 'anm', 'anm']
 
     for s in sim_type:
-        for a in sim_list:
+        for (a, ap) in zip(algos, algo_path):
             for n in nvals:
                 config.data.n_points = n
                 res = pickle.load(
-                    open(os.path.join(args.run, 'simulations', s, a, res_save_name(config, to_algos(a))), 'rb'))
-                res_all[s][to_algos(a)].append(res['correct'])
+                    open(os.path.join(args.run, 'simulations', s, ap, res_save_name(config, to_algos(a))), 'rb'))
+                res_all[s][a].append(res['correct'])
     # prepare plot
     sns.set_style("whitegrid")
     # sns.set_palette('deep')
@@ -149,3 +151,149 @@ def plot_simulations(args, config):
     plt.tight_layout()
     # plt.subplots_adjust(right=0.9)
     plt.savefig(os.path.join(args.run, fig_save_name(config)), dpi=300)
+
+
+def plot_prior_mismatch(args, config):
+    from configs.plotting import label_dict, font_dict
+    title_dic = {'nueralnet_l1': "Post nonlinear SEM" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + z_2 \right)$",
+                 'linear': "Linear SEM\n" + r"$x_2 = x_1 + z_2 $",
+                 'hoyer2009': "Additive noise SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + z_2 $",
+                 'mnm': "Affine noise SEM\n" + r"$x_2 = \sigma(x_1) + \frac{1}{2} x_1^2 + \sigma(x_1)z_2$",
+                 'highdim': "4-dimensional SEM - polynomial",
+                 'highdim_sigmoid': "4-dimensional SEM - sigmoid",
+                 'veryhighdim': "20-dimensional SEM\n" +
+                                r"$\mathbf{x}_{11:20} = \mathbf{g}(\mathbf{x}_{1:10}, \mathbf{z}_{11:20})$"}
+
+    # define some parameters
+    nvals = [25, 50, 75, 100, 150, 250, 500]
+    sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'veryhighdim', 'mnm']
+    noise_dists = ['laplace', 'gaussian', 'student']
+    algos = ['carefl', 'careflns']
+    _flow = os.path.join('carefl', config.flow.architecture.lower())
+    _flow_ns = os.path.join('careflns', config.flow.architecture.lower())
+    algo_path = [_flow, _flow_ns]
+
+    res_all = {s: {a: {nd: [] for nd in noise_dists} for a in algos} for s in sim_type}
+
+    for s in sim_type:
+        for (a, ap) in zip(algos, algo_path):
+            for n in nvals:
+                for nd in noise_dists:
+                    config.data.noise_dist = nd
+                    config.data.n_points = n
+                    res = pickle.load(
+                        open(os.path.join(args.run, 'simulations', s, ap, res_save_name(config, a)), 'rb'))
+                    res_all[s][a].append(res['correct'])
+    # prepare plot
+    sns.set_style("whitegrid")
+    # sns.set_palette('deep')
+    fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, figsize=(20, 4), sharey=True)
+    for a in algos:
+        for nd in noise_dists:
+            ax1.plot(nvals, res_all['linear'][a][nd], marker='o')
+            ax2.plot(nvals, res_all['hoyer2009'][a][nd], marker='o')
+            ax4.plot(nvals, res_all['nueralnet_l1'][a][nd], marker='o')
+            ax3.plot(nvals, res_all['mnm'][a][nd], marker='o')
+            ax5.plot(nvals, res_all['veryhighdim'][a][nd], marker='o', label="{} ({})".format(label_dict[a], nd))
+
+    ax1.set_title(title_dic['linear'], fontsize=font_dict['title'])
+    ax2.set_title(title_dic['hoyer2009'], fontsize=font_dict['title'])
+    ax3.set_title(title_dic['mnm'], fontsize=font_dict['title'])
+    ax4.set_title(title_dic['nueralnet_l1'], fontsize=font_dict['title'])
+    ax5.set_title(title_dic['veryhighdim'], fontsize=font_dict['title'])
+    ax1.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax2.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax3.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax4.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax5.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax1.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    ax2.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    ax3.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    ax4.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    ax5.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    fig.legend(  # The labels for each line
+        # loc="center right",  # Position of legend
+        # borderaxespad=0.2,  # Small spacing around legend box
+        title="Algorithm",  # Title for the legend
+        fontsize=11,
+        bbox_to_anchor=(0.2, 0.54),
+        framealpha=.7,
+    )
+    plt.tight_layout()
+    # plt.subplots_adjust(right=0.9)
+    plt.savefig(os.path.join(args.run, 'prior_mismatch_' + fig_save_name(config)), dpi=300)
+
+
+def plot_width_vs_depth(args, config):
+    from configs.plotting import label_dict, font_dict
+    title_dic = {'nueralnet_l1': "Post nonlinear SEM" + "\n" + r"$x_2 = \sigma \left ( \sigma ( x_1) + z_2 \right)$",
+                 'linear': "Linear SEM\n" + r"$x_2 = x_1 + z_2 $",
+                 'hoyer2009': "Additive noise SEM\n" + r"$x_2 = x_1 + \frac{1}{2} x_1^3 + z_2 $",
+                 'mnm': "Affine noise SEM\n" + r"$x_2 = \sigma(x_1) + \frac{1}{2} x_1^2 + \sigma(x_1)z_2$",
+                 'highdim': "4-dimensional SEM - polynomial",
+                 'highdim_sigmoid': "4-dimensional SEM - sigmoid",
+                 'veryhighdim': "20-dimensional SEM\n" +
+                                r"$\mathbf{x}_{11:20} = \mathbf{g}(\mathbf{x}_{1:10}, \mathbf{z}_{11:20})$"}
+
+    # define some parameters
+    nvals = [25, 50, 75, 100, 150, 250, 500]
+    sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'veryhighdim', 'mnm']
+    nhs = [1, 2, 4, 8, 16, 32, 64]
+    nls = [1, 2, 4, 8, 16, 32, 64]
+    algos = ['carefl']
+    _flow = os.path.join('carefl', config.flow.architecture.lower())
+    _flow_ns = os.path.join('careflns', config.flow.architecture.lower())
+    algo_path = [_flow]
+
+    res_all = {s: {a: {nl: {nh: [] for nh in nhs} for nl in nls} for a in algos} for s in sim_type}
+
+    for s in sim_type:
+        for (a, ap) in zip(algos, algo_path):
+            for n in nvals:
+                for nl in nls:
+                    for nh in nhs:
+                        config.flow.nl = nl
+                        config.flow.nh = nh
+                        config.data.n_points = n
+                        res = pickle.load(
+                            open(os.path.join(args.run, 'simulations', s, ap, res_save_name(config, a)), 'rb'))
+                        res_all[s][a].append(res['correct'])
+    # prepare plot
+    sns.set_style("whitegrid")
+    # sns.set_palette('deep')
+    fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, figsize=(20, 4), sharey=True)
+    for a in algos:
+        for nl in nls:
+            for nh in nhs:
+                ax1.plot(nvals, res_all['linear'][a][nl][nh], marker='o')
+                ax2.plot(nvals, res_all['hoyer2009'][a][nl][nh], marker='o')
+                ax4.plot(nvals, res_all['nueralnet_l1'][a][nl][nh], marker='o')
+                ax3.plot(nvals, res_all['mnm'][a][nl][nh], marker='o')
+                ax5.plot(nvals, res_all['veryhighdim'][a][nl][nh], marker='o', label="nh:{} nl:{}".format(nh, nl))
+
+    ax1.set_title(title_dic['linear'], fontsize=font_dict['title'])
+    ax2.set_title(title_dic['hoyer2009'], fontsize=font_dict['title'])
+    ax3.set_title(title_dic['mnm'], fontsize=font_dict['title'])
+    ax4.set_title(title_dic['nueralnet_l1'], fontsize=font_dict['title'])
+    ax5.set_title(title_dic['veryhighdim'], fontsize=font_dict['title'])
+    ax1.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax2.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax3.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax4.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax5.set_xlabel('Sample size', fontsize=font_dict['xlabel'])
+    ax1.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    ax2.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    ax3.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    ax4.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    ax5.set_ylabel('Proportion correct', fontsize=font_dict['ylabel'])
+    fig.legend(  # The labels for each line
+        # loc="center right",  # Position of legend
+        # borderaxespad=0.2,  # Small spacing around legend box
+        title="Algorithm",  # Title for the legend
+        fontsize=11,
+        bbox_to_anchor=(0.2, 0.54),
+        framealpha=.7,
+    )
+    plt.tight_layout()
+    # plt.subplots_adjust(right=0.9)
+    plt.savefig(os.path.join(args.run, 'width_vs_depth_' + fig_save_name(config)), dpi=300)
