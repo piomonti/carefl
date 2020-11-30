@@ -17,6 +17,8 @@ def res_save_name(config, algo):
         if hasattr(config, 'anm') and config.anm.method.lower() == 'nn':
             return 'sim_{}_nn.p'.format(config.data.n_points)
         return 'sim_{}.p'.format(config.data.n_points)
+    elif algo.lower() == 'anm-nn':
+        return 'sim_{}_nn.p'.format(config.data.n_points)
     elif 'carefl' not in algo.lower():
         return 'sim_{}.p'.format(config.data.n_points)
     return 'sim_{}_{}_{}_{}_{}_{}_{}.p'.format(config.data.n_points,
@@ -92,10 +94,10 @@ def plot_simulations(args, config):
 
     # define some parameters
     nvals = [25, 50, 75, 100, 150, 250, 500]
-    algos = ['carefl', 'careflns', 'lrhyv', 'reci', 'anm', 'anm-nm']
+    algos = ['carefl', 'careflns', 'lrhyv', 'reci', 'anm', 'anm-nn']
     # to_algos = lambda s: s.split('/')[0]
     to_algos = lambda s: 'anm' if s == 'anm-nn' else s
-    sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'highdim', 'highdim_sigmoid', 'veryhighdim', 'mnm']
+    # sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'highdim', 'highdim_sigmoid', 'veryhighdim', 'mnm']
     sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'veryhighdim', 'mnm']
     res_all = {s: {a: [] for a in algos} for s in sim_type}
 
@@ -108,7 +110,7 @@ def plot_simulations(args, config):
             for n in nvals:
                 config.data.n_points = n
                 res = pickle.load(
-                    open(os.path.join(args.run, 'simulations', s, ap, res_save_name(config, to_algos(a))), 'rb'))
+                    open(os.path.join(args.run, 'simulations', s, ap, res_save_name(config, a)), 'rb'))
                 res_all[s][a].append(res['correct'])
     # prepare plot
     sns.set_style("whitegrid")

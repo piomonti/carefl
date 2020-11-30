@@ -270,17 +270,29 @@ class DictIdx:
 
 class NNRegressor:
     def __init__(self, nh, net_class='mlp', n_epochs=200, lr=0.001, beta1=0.9):
-        if net_class.lower() == 'mlp':
-            self.net = MLP1layer(1, 1, nh)
-        elif net_class.lower() == 'mlp4':
-            self.net = MLP4(1, 1, nh)
-        else:
-            raise ValueError(net_class)
+        self.net_class = net_class
+        self.nh = nh
         self.n_epochs = n_epochs
         self.lr = lr
         self.beta1 = beta1
+        self.dim = 1
+        self._init_net()
+
+    def _init_net(self):
+        if self.net_class.lower() == 'mlp':
+            self.net = MLP1layer(self.dim, self.dim, self.nh)
+        elif self.net_class.lower() == 'mlp4':
+            self.net = MLP4(self.dim, self.dim, self.nh)
+        else:
+            raise ValueError(self.net_class)
+
+    def _update_dim(self, x):
+        self.dim = x.shape[-1]
 
     def fit(self, x, y):
+        self._update_dim(x)
+        self._init_net()
+
         x, y = torch.from_numpy(x.astype(np.float32)).reshape((-1, 1)), torch.from_numpy(y.astype(np.float32)).reshape(
             (-1, 1))
         loss_func = torch.nn.MSELoss()
