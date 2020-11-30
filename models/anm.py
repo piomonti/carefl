@@ -123,7 +123,7 @@ class ANM:
 
     def __init__(self, method='gp', config=None):
         """Init the model."""
-        assert method in ['gp', 'linear']
+        assert method in ['gp', 'linear', 'nn']
         self.method = method
         self.dag = None
         self.parents = None
@@ -139,8 +139,8 @@ class ANM:
         elif self.method.lower() == 'nn':
             torch.manual_seed(self.config.training.seed)
             return NNRegressor(nh=self.config.flow.nh, net_class=self.config.flow.net_class,
-                               n_epochs=self.config.training.epochs, lr=self.config.training.lr,
-                               beta1=self.config.training.beta1)
+                               n_epochs=self.config.training.epochs, lr=self.config.optim.lr,
+                               beta1=self.config.optim.beta1)
         else:
             return LinearRegression()
 
