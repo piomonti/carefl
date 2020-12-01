@@ -13,11 +13,7 @@ from models import RECI, ANM, EntropyLR, CAReFl
 
 
 def res_save_name(config, algo):
-    if algo.lower() == 'anm':
-        if hasattr(config, 'anm') and config.anm.method.lower() == 'nn':
-            return 'sim_{}_nn.p'.format(config.data.n_points)
-        return 'sim_{}.p'.format(config.data.n_points)
-    elif algo.lower() == 'anm-nn':
+    if algo.lower() == 'anm-nn':
         return 'sim_{}_nn.p'.format(config.data.n_points)
     elif 'carefl' not in algo.lower():
         return 'sim_{}.p'.format(config.data.n_points)
@@ -185,7 +181,7 @@ def plot_prior_mismatch(args, config):
                     config.data.n_points = n
                     res = pickle.load(
                         open(os.path.join(args.run, 'simulations', s, ap, res_save_name(config, a)), 'rb'))
-                    res_all[s][a].append(res['correct'])
+                    res_all[s][a][nd].append(res['correct'])
     # prepare plot
     sns.set_style("whitegrid")
     # sns.set_palette('deep')
@@ -247,31 +243,45 @@ def plot_width_vs_depth(args, config):
     _flow_ns = os.path.join('careflns', config.flow.architecture.lower())
     algo_path = [_flow]
 
-    res_all = {s: {a: {nl: {nh: [] for nh in nhs} for nl in nls} for a in algos} for s in sim_type}
+    res_all_w = {s: {a: {nh: [] for nh in nhs} for a in algos} for s in sim_type}
+    res_all_d = {s: {a: {nl: [] for nl in nls} for a in algos} for s in sim_type}
+
 
     for s in sim_type:
         for (a, ap) in zip(algos, algo_path):
             for n in nvals:
+                for nh in nhs:
+                    config.flow.nl = 2
+                    config.flow.nh = nh
+                    config.data.n_points = n
+                    res = pickle.load(
+                        open(os.path.join(args.run, 'simulations', s, ap, res_save_name(config, a)), 'rb'))
+                    res_all_w[s][a][nh].append(res['correct'])
                 for nl in nls:
-                    for nh in nhs:
-                        config.flow.nl = nl
-                        config.flow.nh = nh
-                        config.data.n_points = n
-                        res = pickle.load(
-                            open(os.path.join(args.run, 'simulations', s, ap, res_save_name(config, a)), 'rb'))
-                        res_all[s][a].append(res['correct'])
+                    config.flow.nl = nl
+                    config.flow.nh = 1
+                    config.data.n_points = n
+                    res = pickle.load(
+                        open(os.path.join(args.run, 'simulations', s, ap, res_save_name(config, a)), 'rb'))
+                    res_all_d[s][a][nl].append(res['correct'])
     # prepare plot
     sns.set_style("whitegrid")
     # sns.set_palette('deep')
     fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, figsize=(20, 4), sharey=True)
     for a in algos:
         for nl in nls:
-            for nh in nhs:
-                ax1.plot(nvals, res_all['linear'][a][nl][nh], marker='o')
-                ax2.plot(nvals, res_all['hoyer2009'][a][nl][nh], marker='o')
-                ax4.plot(nvals, res_all['nueralnet_l1'][a][nl][nh], marker='o')
-                ax3.plot(nvals, res_all['mnm'][a][nl][nh], marker='o')
-                ax5.plot(nvals, res_all['veryhighdim'][a][nl][nh], marker='o', label="nh:{} nl:{}".format(nh, nl))
+            ax1.plot(nvals, res_all_d['linear'][a][nl], marker='o')
+            ax2.plot(nvals, res_all_d['hoyer2009'][a][nl], marker='o')
+            ax4.plot(nvals, res_all_d['nueralnet_l1'][a][nl], marker='o')
+            ax3.plot(nvals, res_all_d['mnm'][a][nl], marker='o')
+            ax5.plot(nvals, res_all_d['veryhighdim'][a][nl], marker='o', label="nh:{} nl:{}".format(1, nl))
+
+        for nh in nhs:
+            ax1.plot(nvals, res_all_d['linear'][a][nh], marker='o')
+            ax2.plot(nvals, res_all_d['hoyer2009'][a][nh], marker='o')
+            ax4.plot(nvals, res_all_d['nueralnet_l1'][a][nh], marker='o')
+            ax3.plot(nvals, res_all_d['mnm'][a][nh], marker='o')
+            ax5.plot(nvals, res_all_d['veryhighdim'][a][nh], marker='o', label="nh:{} nl:{}".format(nh, 2))
 
     ax1.set_title(title_dic['linear'], fontsize=font_dict['title'])
     ax2.set_title(title_dic['hoyer2009'], fontsize=font_dict['title'])
