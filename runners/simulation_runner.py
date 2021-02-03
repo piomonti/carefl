@@ -236,8 +236,8 @@ def plot_width_vs_depth(args, config):
     # define some parameters
     nvals = [25, 50, 75, 100, 150, 250, 500]
     sim_type = ['linear', 'hoyer2009', 'nueralnet_l1', 'veryhighdim', 'mnm']
-    nhs = [1, 2, 4, 8, 16, 32, 64]
-    nls = [1, 2, 4, 8, 16, 32, 64]
+    nhs = [1, 2, 4, 8, 16, 32]
+    nls = [2, 4, 8]
     algos = ['carefl']
     _flow = os.path.join('carefl', config.flow.architecture.lower())
     _flow_ns = os.path.join('careflns', config.flow.architecture.lower())
@@ -277,11 +277,11 @@ def plot_width_vs_depth(args, config):
             ax5.plot(nvals, res_all_d['veryhighdim'][a][nl], marker='o', label="nh:{} nl:{}".format(1, nl))
 
         for nh in nhs:
-            ax1.plot(nvals, res_all_d['linear'][a][nh], marker='o')
-            ax2.plot(nvals, res_all_d['hoyer2009'][a][nh], marker='o')
-            ax4.plot(nvals, res_all_d['nueralnet_l1'][a][nh], marker='o')
-            ax3.plot(nvals, res_all_d['mnm'][a][nh], marker='o')
-            ax5.plot(nvals, res_all_d['veryhighdim'][a][nh], marker='o', label="nh:{} nl:{}".format(nh, 2))
+            ax1.plot(nvals, res_all_w['linear'][a][nh], marker='o')
+            ax2.plot(nvals, res_all_w['hoyer2009'][a][nh], marker='o')
+            ax4.plot(nvals, res_all_w['nueralnet_l1'][a][nh], marker='o')
+            ax3.plot(nvals, res_all_w['mnm'][a][nh], marker='o')
+            ax5.plot(nvals, res_all_w['veryhighdim'][a][nh], marker='o', label="nh:{} nl:{}".format(nh, 2))
 
     ax1.set_title(title_dic['linear'], fontsize=font_dict['title'])
     ax2.set_title(title_dic['hoyer2009'], fontsize=font_dict['title'])
