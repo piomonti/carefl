@@ -1,15 +1,17 @@
 # Code for "Causal Autoregressive Flow"
 
+This repository contains code to run and reproduce experiments presented in [Causal Autoregressive Flows](https://arxiv.org/abs/2011.02268),
+presented at the 24th International Conference on Artificial Intelligence and Statistics (AISTATS 2021).
 
-This repository contains code to reproduce results presented in "Autoregressive flow-based causal
-discovery and inference", presented at the 2nd ICML workshop on Invertible Neural Networks,
+The repository originally contained the code to reproduce results presented in [Autoregressive flow-based causal discovery and inference](https://arxiv.org/abs/2007.09390),
+presented at the 2nd ICML workshop on Invertible Neural Networks,
 Normalizing Flows, and Explicit Likelihood Models (2020).
 
 The `main.py` script is the main gateway to reproduce the experiments detailed in the mansucript, and is straightforward
 to use. Type `python main.py -h` to learn about the options.
 
 Hyperparameters can be changed through the configuration files under `configs/`.
-The `main.py` is setup to read the corresponding config file for each experiment, but this can be overwritten suing the 
+The `main.py` is setup to read the corresponding config file for each experiment, but this can be overwritten suing the
 `-y` or `--config` flag.
 
 ### Dependencies

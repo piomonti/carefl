@@ -12,6 +12,12 @@ from data.generate_synth_data import gen_synth_causal_dat, intervention_sem
 from models import RECI, ANM, EntropyLR, CAReFl
 
 
+# make sure matplotlib doesn't use Type 3 fonts
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
+
 def res_save_name(config, algo):
     if algo.lower() == 'anm-nn':
         return 'sim_{}_nn.p'.format(config.data.n_points)
@@ -59,6 +65,8 @@ def run_simulations(args, config):
             mod = EntropyLR()
         elif algo.lower() == 'anm':
             mod = ANM(method=config.anm.method, config=config)
+            if config.anm.method.lower() == 'nn':
+                algo = 'anm-mm'
         elif algo.lower() == 'reci':
             mod = RECI(form=reci_form_dict[causal_mechanism], scale_input=True)
         elif algo.lower() == 'carefl':
@@ -143,8 +151,9 @@ def plot_simulations(args, config):
         # borderaxespad=0.2,  # Small spacing around legend box
         title="Algorithm",  # Title for the legend
         fontsize=11,
-        bbox_to_anchor=(0.2, 0.54),
+        bbox_to_anchor=(0.2, 0.44),
         framealpha=.7,
+        ncol=2,
     )
     plt.tight_layout()
     # plt.subplots_adjust(right=0.9)
@@ -212,9 +221,9 @@ def plot_prior_mismatch(args, config):
     fig.legend(  # The labels for each line
         # loc="center right",  # Position of legend
         # borderaxespad=0.2,  # Small spacing around legend box
-        title="Algorithm",  # Title for the legend
+        title="Algorithm (noise dist.)",  # Title for the legend
         fontsize=11,
-        bbox_to_anchor=(0.2, 0.54),
+        bbox_to_anchor=(0.2, 0.6),
         framealpha=.7,
     )
     plt.tight_layout()
