@@ -19,6 +19,9 @@ matplotlib.rcParams['ps.fonttype'] = 42
 
 
 def res_save_name(config, algo):
+    """
+    helper function to format names of pickled results
+    """
     if algo.lower() == 'anm-nn':
         return 'sim_{}_nn.p'.format(config.data.n_points)
     elif 'carefl' not in algo.lower():
@@ -33,6 +36,9 @@ def res_save_name(config, algo):
 
 
 def fig_save_name(config):
+    """
+    helper function to format figure names
+    """
     return 'sim_causal_dir_{}_{}_{}_{}_{}_{}.pdf'.format(config.flow.architecture.lower(),
                                                          config.flow.net_class.lower(),
                                                          config.flow.nl,

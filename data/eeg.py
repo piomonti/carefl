@@ -1,14 +1,21 @@
 """
 file to process and load EEG data
 data can be downloaded from http://bbci.de/competition/iii/download/ after authentication
-we used dataset 4a, subject 3 at 1MHz as in Lopez-paz et al 15, and Peters et al. 09
-once downloaded to root (default = "data/eeg"), unzip to get this file: "data/eeg/1000mhz/data_set_IVa_av_cnt.txt"
+we used dataset 4a, subject 3 at 1MHz
+once downloaded to data root (default = "data/eeg"), unzip to get this file: "data/eeg/1000mhz/data_set_IVa_av_cnt.txt"
 """
 import numpy as np
 import os
 
 
 def create_timeseries(root='data/egg/'):
+    """
+    Prepreocesses the EEG dataset, flipping the time arrow of certain channels at random.
+    The preprocessed data is saved to 3 different files:
+        - `eeg_1000Hz_5s` contains the dataset before shuffling
+        - `eeg_1000Hz_5s_ts` contains the dataset, after certain channels have been flipped in time.
+        - `eeg_1000Hz_5s_dirs` contains the direction of each channel (1 is forward, 0 is backward).
+    """
     try:
         print("loading {}".format(os.path.join(root, '1000Hz', 'data_set_IVa_av_cnt.txt')))
         eeg = np.loadtxt(os.path.join(root, '1000Hz', 'data_set_IVa_av_cnt.txt'))
@@ -36,6 +43,37 @@ def create_timeseries(root='data/egg/'):
 
 
 def eeg_data(root='data/eeg', idx=None, lag=None, n_obs=500):
+    """
+    Reads EEG channels from preprocessed data.
+
+    The EEG data has n channels. This function reads the `idx`-th channel as $x$,
+    delays it by `lag` and stores it as $y$, and returns the concatenated 2-d array
+    $(x, y)$ of shape `(n_obs-1, 2)`.
+
+    The task is then to guess to guess the time arrow, by deciding if x->y or y->x.
+
+    Parameters:
+    ----------
+    idx: int or array_like
+      Index or list of indices of the channels to load
+      Note that if `idx` is an array_like, the returned array will be of size
+      (..., len(idx)*2) instead of (..., 2).
+    lag: int or array_like
+      Lag or lags used to compute $y$. If 2 or more lags are given, create
+      a $y$ for each lag value, and concatenate the results along the 0-th axis
+    n_obs: int
+      Number of observations to use from the preprocessed EEG data.
+      Note that if multiple lag values are provided, the returned array will not be
+      of size `(n_obs-1, 2)`, but rather `(len(lag)*n_obs - sum_{i=1}^len(lag)i, 2)`
+
+    Returns:
+    ----------
+    data: ndarray, shape (..., len(idx)*2)
+        Array containting the original and delayed channels
+    direction: ndarray, shape (..., len(idx))
+        Array containing the direction of each channel.
+        The values in this array can be either 'x->y' or 'y->x'
+    """
     if lag is None:
         lag = [1]
     try:

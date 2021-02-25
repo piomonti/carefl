@@ -75,6 +75,9 @@ def dict2namespace(config):
 
 
 def make_and_set_dirs(args, config):
+    """
+    create folders for checkpoints and results
+    """
     if config.algorithm.lower() == 'carefl':
         args.algo = os.path.join('carefl' + 'ns' * (1 - config.flow.scale), config.flow.architecture.lower())
     else:
@@ -85,6 +88,9 @@ def make_and_set_dirs(args, config):
 
 
 def read_config(args):
+    """
+    automatically find the right config file from run flags
+    """
     if args.config != '':
         return
     if args.simulation:
@@ -126,7 +132,7 @@ def main():
         if not args.plot:
             print('Running {} on {} synthetic experiments ({} simulations - {} points)'.format(config.algorithm,
                                                                                                config.data.causal_mech,
-                                                                                               args.n_sims,
+                                                                                               config.n_sims,
                                                                                                config.data.n_points))
             run_simulations(args, config)
         else:

@@ -9,6 +9,9 @@ from models import RECI, ANM, EntropyLR, CAReFl
 
 
 def res_save_name(config, algo, obs):
+    """
+    helper function for formatting when saving pickled results
+    """
     if 'carefl' not in algo.lower():
         return 'eeg_{}_{}_{}.p'.format(config.data.timeseries_idx, config.data.lag, obs)
     return 'eeg_{}_{}_{}_{}_{}_{}_{}.p'.format(config.data.timeseries_idx,
@@ -21,6 +24,9 @@ def res_save_name(config, algo, obs):
 
 
 def fig_save_name(config, obs):
+    """
+    helper function for formatting when saving figures
+    """
     return 'eeg_arrow_{}_{}_{}_{}_{}_{}.pdf'.format(config.flow.architecture.lower(),
                                                     config.flow.net_class.lower(),
                                                     config.flow.nl,
@@ -68,6 +74,9 @@ def run_eeg(args, config):
 
 
 def plot_eeg(args, config):
+    """
+    plots the figure for the EEG experiment.
+    """
     from configs.plotting import color_dict, label_dict, font_dict
 
     _flow = os.path.join('carefl', config.flow.architecture.lower())
