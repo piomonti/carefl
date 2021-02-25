@@ -30,12 +30,18 @@ def fig_save_name(config, obs):
 
 
 def run_eeg(args, config):
+    """
+    Runs a causal algorithm on a *single* EEG timeseries.
+    The timeseries is specified by the config.data.timeseries_idx field
+    To reproduce the figure in the paper, this function needs to be run multiple
+    times with the different combinations of algorithm, timeseries index, etc...
+    """
     n_obs_list = [150, 500]
-    n_sims = args.n_sims
+    n_sims = config.n_sims
     algo = config.algorithm
     results = {n: {'p': [], 'c': [], 'correct': 0} for n in n_obs_list}
     for n_obs in n_obs_list:
-        n_valid_sims = args.n_sims
+        n_valid_sims = config.n_sims
         per_correct = 0
         for sim in range(n_sims):
             config.training.seed = sim

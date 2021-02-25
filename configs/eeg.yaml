@@ -1,4 +1,5 @@
 algorithm: 'carefl'  # in {'CAReFl', 'LRHyv', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
+n_sims: 11
 
 data:
   timeseries_idx: 0

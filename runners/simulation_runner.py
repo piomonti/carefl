@@ -42,8 +42,15 @@ def fig_save_name(config):
 
 
 def run_simulations(args, config):
+    """
+    Run simulations for a given config
+    To reproduce the figures in the paper, this function needs to be run
+    on all different combinations of dataset, algorithm, number of data points, etc...
+    This is done by running the `main.py` script multiple times. An example is provided in
+    the README.
+    """
     n_points = config.data.n_points
-    n_sims = n_valid_sims = args.n_sims
+    n_sims = n_valid_sims = config.n_sims
     algo = config.algorithm
     causal_mechanism = config.data.causal_mech
     reci_form_dict = {'linear': 'poly', 'hoyer2009': 'poly', 'nueralnet_l1': 'GP', 'highdim': 'poly', 'mnm': 'GP',

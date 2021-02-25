@@ -1,4 +1,5 @@
 algorithm: 'carefl'  # in {'CAReFl', 'LRHyv', 'RECI', 'ANM'} OR in {'CAReFl', 'gp', 'linear'}
+n_sims: 250
 
 data:
   causal_mech: 'linear'  # in {linear, hoyer2009, nueralnet_l1, 'highdim'}

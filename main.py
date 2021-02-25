@@ -15,12 +15,11 @@ from runners.simulation_runner import run_simulations, plot_simulations
 
 
 def parse_input():
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--n-sims', type=int, default=250, help='Number of synthetic simulations to run')
+    parser = argparse.ArgumentParser(description='Reproduce experiments for Causal Autoregressive Flows')
     parser.add_argument('--run', type=str, default='results', help='Path for saving results.')
     parser.add_argument('--seed', type=int, default=0, help='random seed')
-    parser.add_argument('--plot', action='store_true', help='plot experiments')
 
+    parser.add_argument('--plot', action='store_true', help='plot experiments')
     parser.add_argument('-s', '--simulation', action='store_true', help='run the CD exp on synthetic data')
     parser.add_argument('-p', '--pairs', action='store_true', help='Run Cause Effect Pairs experiments')
     parser.add_argument('-i', '--intervention', action='store_true', help='run intervention exp on toy example')
@@ -32,16 +31,20 @@ def parse_input():
     parser.add_argument('-y', '--config', type=str, default='', help='config file to use')
     parser.add_argument('-m', '--causal-mech', type=str, default='', help='Dataset to run synthetic experiments on.')
     parser.add_argument('-a', '--algorithm', type=str, default='', help='algorithm to run')
-    parser.add_argument('-n', '--n-points', type=int, default=-1,
-                        help='number of simulated data points --- also controls video_idx/pair_idx for real data exps')
+    parser.add_argument('-n', dest='n_points', type=int, default=-1,
+                        help='number of simulated data points --- also controls timeseris_idx/pair_idx for real data exps')
     parser.add_argument('--noise-dist', type=str, default='', help='noise dist')
     parser.add_argument('--nl', type=int, default=-1, help='number of layer for flow')
     parser.add_argument('--nh', type=int, default=-1, help='number of hidden units for nets')
+    parser.add_argument('--n-sims', type=int, default=-1, help='Number of synthetic simulations to run')
 
     return parser.parse_args()
 
 
 def debug_options(args, config):
+    """
+    helper function to overwrite options in config file based on debug flags
+    """
     if args.causal_mech != '':
         config.data.causal_mech = args.causal_mech
     if args.algorithm != '':
@@ -56,6 +59,8 @@ def debug_options(args, config):
         config.flow.nl = args.nl
     if args.nh != -1:
         config.flow.nh = args.nh
+    if args.n_sims != -1:
+        config.n_sims = args.n_sims
 
 
 def dict2namespace(config):
