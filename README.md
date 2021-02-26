@@ -1,11 +1,9 @@
 # Code for "Causal Autoregressive Flow"
 
-This repository contains code to run and reproduce experiments presented in [Causal Autoregressive Flows](https://arxiv.org/abs/2011.02268),
-presented at the 24th International Conference on Artificial Intelligence and Statistics (AISTATS 2021).
+This repository contains code to run and reproduce experiments presented in [Causal Autoregressive Flows](https://arxiv.org/abs/2011.02268), presented at the 24th International Conference on Artificial Intelligence and Statistics (AISTATS 2021).
 
-The repository originally contained the code to reproduce results presented in [Autoregressive flow-based causal discovery and inference](https://arxiv.org/abs/2007.09390),
-presented at the 2nd ICML workshop on Invertible Neural Networks,
-Normalizing Flows, and Explicit Likelihood Models (2020).
+The repository originally contained the code to reproduce results presented in [Autoregressive flow-based causal discovery and inference](https://arxiv.org/abs/2007.09390), presented at the 2nd ICML workshop on Invertible Neural Networks, Normalizing Flows, and Explicit Likelihood Models (2020).
+Switch to the `workshop` branch to access this version of the code.
 
 
 
