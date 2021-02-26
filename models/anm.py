@@ -1,10 +1,6 @@
 # ------------------------------------------
 # Additive noise models (Hoyer at al 2009)
 # ------------------------------------------
-#
-#
-#
-# this code is taken from cdt toolbox as it was failing
 
 import numpy as np
 import torch
@@ -218,7 +214,7 @@ class ANM:
 def sorted_roots_effects_from_dag(dag):
     """
     find the roots (causes) and effects in a dag and return them sorted
-    :param dag : (np.ndarray) an adjacency matric that describes a DAG
+    :param dag : (np.ndarray) an adjacency matrix that describes a DAG
     :return: (tuple) return parents, roots, sorted_effects where:
         - parents: (dict) a dictionary whose keys are the effects, and values are their parents in the dag
         - roots: (list) the roots of the dag

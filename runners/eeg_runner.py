@@ -5,7 +5,7 @@ import pickle
 import seaborn as sns
 
 from data.eeg import eeg_data
-from models import RECI, ANM, EntropyLR, CAReFl
+from models import RECI, ANM, EntropyLR, CAREFL
 
 
 def res_save_name(config, algo, obs):
@@ -59,7 +59,7 @@ def run_eeg(args, config):
             elif algo.lower() == 'reci':
                 mod = RECI(form='GP', scale_input=True)
             elif algo.lower() == 'carefl':
-                mod = CAReFl(config)
+                mod = CAREFL(config)
             else:
                 raise ValueError('Unknown algorithm')
             p, direction = mod.predict_proba(data=data)

@@ -6,7 +6,7 @@ from sklearn.gaussian_process.kernels import RBF
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import scale
 
-from models.carefl import CAReFl
+from models.carefl import CAREFL
 
 
 def run_fmri(args, config):
@@ -51,7 +51,7 @@ def run_fmri(args, config):
         intervene_dat = scale_dat[subject_int_ids[k]['stim']][:, rois]
 
         # ------ run models
-        mod = CAReFl(config)
+        mod = CAREFL(config)
         mod.fit_to_sem(train_dat)
         xvals = intervene_dat[:, 0]
         int_pred = np.array([mod.predict_intervention(x, n_samples=500)[1][0, 1] for x in xvals])

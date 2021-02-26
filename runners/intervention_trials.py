@@ -9,7 +9,7 @@ import pickle
 import seaborn as sns
 
 from data.generate_synth_data import intervention_sem
-from models import ANM, CAReFl
+from models import ANM, CAREFL
 
 
 def res_save_name(config, algo):
@@ -43,7 +43,7 @@ def run_interventions(args, config):
                                          multiplicative=config.data.multiplicative)
     print("fitting a {} model".format(model))
     # fit to an affine autoregressive flow or ANM with gp/linear functions
-    mod = CAReFl(config) if model == 'carefl' else ANM(method=model)
+    mod = CAREFL(config) if model == 'carefl' else ANM(method=model)
     mod.fit_to_sem(data, dag)
     # intervene on X_1 and get a sample of {x | do(X_1=a)} for a in [-3, 3]
     avals = np.arange(-3, 3, .1)

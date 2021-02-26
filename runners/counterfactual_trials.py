@@ -8,7 +8,7 @@ import pylab as plt
 import seaborn as sns
 
 from data.generate_synth_data import intervention_sem
-from models.carefl import CAReFl
+from models.carefl import CAREFL
 
 
 def counterfactuals(args, config):
@@ -18,7 +18,7 @@ def counterfactuals(args, config):
     (_, _, X3_std, X4_std) = X.std(axis=0)
     X /= np.array([1, 1, X3_std, X4_std])
     # fit CAReFl to the data
-    mod = CAReFl(config)
+    mod = CAREFL(config)
     mod.fit_to_sem(X)
 
     def gen_observation(N):

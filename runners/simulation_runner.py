@@ -9,7 +9,7 @@ import pickle
 import seaborn as sns
 
 from data.generate_synth_data import gen_synth_causal_dat, intervention_sem
-from models import RECI, ANM, EntropyLR, CAReFl
+from models import RECI, ANM, EntropyLR, CAREFL
 
 
 # make sure matplotlib doesn't use Type 3 fonts
@@ -83,7 +83,7 @@ def run_simulations(args, config):
         elif algo.lower() == 'reci':
             mod = RECI(form=reci_form_dict[causal_mechanism], scale_input=True)
         elif algo.lower() == 'carefl':
-            mod = CAReFl(config)
+            mod = CAREFL(config)
         else:
             raise ValueError('Unknown algorithm')
         p, direction = mod.predict_proba(data=data)
