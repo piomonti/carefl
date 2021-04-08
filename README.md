@@ -110,11 +110,17 @@ done
 If you find this code helpful/inspiring for your research, we would be grateful if you cite the following:
 
 ```bib
-@article{khemakhem2021causal,
-  title={Causal Autoregressive Flows},
-  author={Khemakhem, Ilyes and Monti, Ricardo Pio and Leech, Robert and Hyv{\"a}rinen, Aapo},
-  booktitle={International Conference on Artificial Intelligence and Statistics},
-  year={2021}
+@inproceedings{khemakhem2021causal,
+  title = { Causal Autoregressive Flows },
+  author = {Khemakhem, Ilyes and Monti, Ricardo and Leech, Robert and Hyvarinen, Aapo},
+  booktitle = {Proceedings of The 24th International Conference on Artificial Intelligence and Statistics},
+  pages = {3520--3528},
+  year = {2021},
+  editor = {Banerjee, Arindam and Fukumizu, Kenji},
+  volume = {130},
+  series = {Proceedings of Machine Learning Research},
+  month = {13--15 Apr},
+  publisher = {PMLR}
 }
 ```
 
